@@ -13,7 +13,7 @@
 
 <meta name="author" content="Andreas Blätte (andreas.blaette@uni-due.de)" />
 
-<meta name="date" content="2019-10-18" />
+<meta name="date" content="2019-12-09" />
 
 <title>Introducing ‘cwbtools’</title>
 
@@ -304,7 +304,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Introducing ‘cwbtools’</h1>
 <h4 class="author">Andreas Blätte (<a href="mailto:andreas.blaette@uni-due.de" class="email">andreas.blaette@uni-due.de</a>)</h4>
-<h4 class="date">2019-10-18</h4>
+<h4 class="date">2019-12-09</h4>
 
 
 
@@ -397,7 +397,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb15-6" title="6">  <span class="dt">compress =</span> <span class="ot">FALSE</span></a>
 <a class="sourceLine" id="cb15-7" title="7">  )</a></code></pre></div>
 <pre><code>## === Makeall: processing corpus UNGA ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//Rtmpz1FUVX/registry
+## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//Rtmp7YafFv/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
@@ -488,7 +488,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb27-5" title="5">   <span class="dt">method =</span> <span class="st">&quot;R&quot;</span>, <span class="dt">compress =</span> <span class="ot">FALSE</span></a>
 <a class="sourceLine" id="cb27-6" title="6">)</a></code></pre></div>
 <pre><code>## === Makeall: processing corpus AUSTEN ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//Rtmpz1FUVX/registry
+## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//Rtmp7YafFv/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
@@ -503,7 +503,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <p>The new corpus will not be available unless we trigger that files in the registry directory are re-read.</p>
 <div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb29-1" title="1"><span class="kw">cqp_reset_registry</span>(<span class="dt">registry =</span> registry_tmp)</a></code></pre></div>
 <pre><code>## [1] TRUE</code></pre>
-<p>This is a rudimentary check (using low-level RcppCWB functions) whether to corpus can be used. How often does the token “pride” occurr?</p>
+<p>This is a rudimentary check (using low-level RcppCWB functions) whether to corpus can be used. How often does the token “pride” occur?</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb31-1" title="1">corpus &lt;-<span class="st"> &quot;AUSTEN&quot;</span></a>
 <a class="sourceLine" id="cb31-2" title="2">token &lt;-<span class="st"> &quot;pride&quot;</span></a>
 <a class="sourceLine" id="cb31-3" title="3">p_attr &lt;-<span class="st"> &quot;word&quot;</span></a>
@@ -572,7 +572,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 ## metadata: 3 columns / 20 rows</code></pre>
 <p>… we tokenize the text to gain the token stream table …</p>
 <div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb40-1" title="1">Reuters<span class="op">$</span><span class="kw">tokenize</span>()</a></code></pre></div>
-<p>… we have a look at the token strem …</p>
+<p>… we have a look at the token stream …</p>
 <div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb41-1" title="1">Reuters<span class="op">$</span>tokenstream</a></code></pre></div>
 <pre><code>##        id         word cpos
 ##    1: 127      diamond    0
@@ -595,7 +595,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb43-6" title="6">   <span class="dt">method =</span> <span class="st">&quot;R&quot;</span>, <span class="dt">compress =</span> <span class="ot">FALSE</span></a>
 <a class="sourceLine" id="cb43-7" title="7">)</a></code></pre></div>
 <pre><code>## === Makeall: processing corpus REUTERS ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//Rtmpz1FUVX/registry
+## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//Rtmp7YafFv/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK

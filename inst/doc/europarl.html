@@ -13,7 +13,7 @@
 
 <meta name="author" content="Andreas Blätte (andreas.blaette@uni-due.de)" />
 
-<meta name="date" content="2019-10-18" />
+<meta name="date" content="2019-12-09" />
 
 <title>Creating a Corpus Data Package: Wrapping Europarl</title>
 
@@ -304,7 +304,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Creating a Corpus Data Package: Wrapping Europarl</h1>
 <h4 class="author">Andreas Blätte (<a href="mailto:andreas.blaette@uni-due.de" class="email">andreas.blaette@uni-due.de</a>)</h4>
-<h4 class="date">2019-10-18</h4>
+<h4 class="date">2019-12-09</h4>
 
 
 
@@ -351,7 +351,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb7-2" title="2">europarl_data_dir &lt;-<span class="st"> </span><span class="kw">file.path</span>(tmp_dir, <span class="st">&quot;Europarl3-CWB&quot;</span>, <span class="st">&quot;data&quot;</span>)</a>
 <a class="sourceLine" id="cb7-3" title="3">corpora &lt;-<span class="st"> </span><span class="kw">list.files</span>(europarl_registry_dir)</a>
 <a class="sourceLine" id="cb7-4" title="4">corpora</a></code></pre></div>
-<p>So these are the corpora. We iterate throught the registry files and adjust the path to the data directories.</p>
+<p>So these are the corpora. We iterate through the registry files and adjust the path to the data directories.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1"><span class="cf">for</span> (corpus <span class="cf">in</span> corpora){</a>
 <a class="sourceLine" id="cb8-2" title="2">  registry &lt;-<span class="st"> </span><span class="kw">registry_file_parse</span>(<span class="dt">corpus =</span> corpus, <span class="dt">registry_dir =</span> europarl_registry_dir)</a>
 <a class="sourceLine" id="cb8-3" title="3">  registry[[<span class="st">&quot;home&quot;</span>]] &lt;-<span class="st"> </span><span class="kw">file.path</span>(europarl_data_dir, <span class="kw">gsub</span>(<span class="st">&quot;^europarl-(.*)$&quot;</span>, <span class="st">&quot;</span><span class="ch">\\</span><span class="st">1&quot;</span>, corpus))</a>
