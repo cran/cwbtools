@@ -197,5 +197,6 @@ count <- length(cpos)
 count
 
 ## ------------------------------------------------------------------------
-unlink(tmpdir, recursive = TRUE)
+unlink(registry_tmp, recursive = TRUE)
+unlink(data_dir_tmp, recursive = TRUE)
 

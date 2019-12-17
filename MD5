@@ -1,6 +1,6 @@
-23c531f9444eb5b44246a620aa7e782a *DESCRIPTION
+4846e7d2fc7d15c2538857733db2e905 *DESCRIPTION
 0039d0685f8a6852d09b00a50d4832b4 *NAMESPACE
-9f7c161e284a65fb9ca9a20ca4af118b *NEWS.md
+5c078b4f8ae6558f9f1ddd808d18028f *NEWS.md
 1b883d9504d757659692791363b71719 *R/CorpusData.R
 c2d51b4a00bd60b89ea4d22fc11853b5 *R/corpus.R
 7809b8c937d2d870323b75f43fc12e17 *R/cwb.R
@@ -14,12 +14,12 @@ b3ded461fcfb3c75ed5908f97043e67c *R/registry_file.R
 884fad2df7eb194f7543030586e6e78d *build/vignette.rds
 e28cdd7145e136c546f69bdb309471f5 *inst/CITATION
 17549f11d91259f99f77ba2295631c9f *inst/Rscript/setpaths.R
-bf370f734b9c3fd70cea6e200dac89d2 *inst/doc/europarl.R
-e16953a5d4eb3b3fd6aeced5e5adfaf5 *inst/doc/europarl.Rmd
-d8bfab44f2925d3cfce9d46d778a67c0 *inst/doc/europarl.html
-d74f0fafb022c0ca8983fbc309ac34a0 *inst/doc/vignette.R
-517dd016de761b186ba657593a1e1474 *inst/doc/vignette.Rmd
-4bdaf632de03ba2bb994aea1d2b2f877 *inst/doc/vignette.html
+4b04ac9194d1b73a0eb417ae62d41f60 *inst/doc/europarl.R
+206c351c908cbab662c98a0ec8ea93ef *inst/doc/europarl.Rmd
+a9d3c19cbd6feb288027aa4e9afb8a40 *inst/doc/europarl.html
+da342a40d730a819cef679bd305a2160 *inst/doc/vignette.R
+d3dfa916c496db8b4f84afbf1b8c597f *inst/doc/vignette.Rmd
+5c78811be4d638990a827cb00cf12aa1 *inst/doc/vignette.html
 2353e1588c0dc51fa0aa80bff2e43010 *inst/extdata/cwb/README
 d9869209d717ecba80988e6152f85556 *inst/txt/licenses/CC_BY-NC-SA_3.0.txt
 5a1953722125326467ea447db2773590 *inst/txt/licenses/README
@@ -40,5 +40,5 @@ fe278469bfb045dc6ec1b63eaadcf9c1 *man/get_encoding.Rd
 499625a579f1d59fcd8717b06a48c963 *man/pkg_utils.Rd
 a1cf01f214c41eaf51208358d22ac34d *man/registry_file.Rd
 00081a02ea9bd9f43d4a82266119abe0 *man/s_attribute.Rd
-e16953a5d4eb3b3fd6aeced5e5adfaf5 *vignettes/europarl.Rmd
-517dd016de761b186ba657593a1e1474 *vignettes/vignette.Rmd
+206c351c908cbab662c98a0ec8ea93ef *vignettes/europarl.Rmd
+d3dfa916c496db8b4f84afbf1b8c597f *vignettes/vignette.Rmd

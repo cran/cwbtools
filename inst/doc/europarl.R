@@ -15,6 +15,7 @@ exec <- FALSE
 
 ## ----untar_europarl_tarball, eval = exec---------------------------------
 #  untar(tarfile = europarl_tarball, exdir = tmp_dir)
+#  unlink(europarl_tarball)
 
 ## ----get_corpora, eval = exec--------------------------------------------
 #  europarl_registry_dir <- file.path(tmp_dir, "Europarl3-CWB", "registry")
@@ -103,4 +104,5 @@ exec <- FALSE
 
 ## ----unlink_things, eval = exec------------------------------------------
 #  unlink(tmp_dir, recursive = TRUE)
+#  unlink(file.path(tmp_dir, "europarl"))
 
