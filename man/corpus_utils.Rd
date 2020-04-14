@@ -10,30 +10,54 @@
 \alias{corpus_recode}
 \title{Install and manage corpora.}
 \usage{
-corpus_install(pkg = NULL,
-  repo = "http://polmine.sowi.uni-due.de/packages", tarball = NULL,
-  lib = .libPaths()[1], verbose = TRUE, user = NULL,
-  password = NULL, ...)
+corpus_install(
+  pkg = NULL,
+  repo = "https://PolMine.github.io/drat/",
+  tarball = NULL,
+  doi = NULL,
+  lib = .libPaths()[1],
+  registry_dir = cwbtools::cwb_registry_dir(),
+  corpus_dir = cwb_corpus_dir(registry_dir),
+  ask = interactive(),
+  verbose = TRUE,
+  user = NULL,
+  password = NULL,
+  ...
+)
 
 corpus_packages()
 
-corpus_rename(old, new, registry_dir = Sys.getenv("CORPUS_REGISTRY"),
-  verbose = TRUE)
+corpus_rename(
+  old,
+  new,
+  registry_dir = Sys.getenv("CORPUS_REGISTRY"),
+  verbose = TRUE
+)
 
-corpus_remove(corpus, registry_dir = Sys.getenv("CORPUS_REGISTRY"))
+corpus_remove(corpus, registry_dir = cwb_registry_dir(), ask = interactive())
 
-corpus_as_tarball(corpus, registry_dir, tarfile, verbose = TRUE)
+corpus_as_tarball(corpus, registry_dir, data_dir, tarfile, verbose = TRUE)
 
-corpus_copy(corpus, registry_dir, data_dir = NULL,
-  registry_dir_new = file.path(normalizePath(tempdir(), winslash = "/"),
-  "cwb", "registry", fsep = "/"),
-  data_dir_new = file.path(normalizePath(tempdir(), winslash = "/"),
-  "cwb", "indexed_corpora", tolower(corpus), fsep = "/"),
-  verbose = interactive(), progress = TRUE)
+corpus_copy(
+  corpus,
+  registry_dir,
+  data_dir = NULL,
+  registry_dir_new = file.path(normalizePath(tempdir(), winslash = "/"), "cwb",
+    "registry", fsep = "/"),
+  data_dir_new = file.path(normalizePath(tempdir(), winslash = "/"), "cwb",
+    "indexed_corpora", tolower(corpus), fsep = "/"),
+  verbose = interactive(),
+  progress = TRUE
+)
 
-corpus_recode(corpus, registry_dir = Sys.getenv("CORPUS_REGISTRY"),
+corpus_recode(
+  corpus,
+  registry_dir = Sys.getenv("CORPUS_REGISTRY"),
   data_dir = registry_file_parse(corpus, registry_dir)[["home"]],
-  skip = character(), to = c("latin1", "UTF-8"), verbose = TRUE)
+  skip = character(),
+  to = c("latin1", "UTF-8"),
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pkg}{Name of the data package.}
@@ -42,7 +66,19 @@ corpus_recode(corpus, registry_dir = Sys.getenv("CORPUS_REGISTRY"),
 
 \item{tarball}{The URL or local path to a tarball with a CWB indexed corpus.}
 
+\item{doi}{The DOI (Digital Object Identifier) of a corpus deposited at
+Zenodo, presented as a hyperlink. (For testing purposes, use
+("https://doi.org/10.5281/zenodo.3748858".)}
+
 \item{lib}{Directory for R packages, defaults to \code{.libPaths()[1]}.}
+
+\item{registry_dir}{Directory of registry.}
+
+\item{corpus_dir}{The directory that contains the data directories of indexed
+corpora.}
+
+\item{ask}{A \code{logical} value, whether to ask user for confirmation
+before removing a corpus.}
 
 \item{verbose}{Logical, whether to be verbose.}
 
@@ -58,13 +94,11 @@ or \code{download.file}, if \code{tarball} is specified.}
 
 \item{new}{Name of the (new) corpus.}
 
-\item{registry_dir}{Directory of registry.}
-
 \item{corpus}{A CWB corpus.}
 
-\item{tarfile}{Filename of tarball.}
-
 \item{data_dir}{The data directory where the files of the CWB corpus live.}
+
+\item{tarfile}{Filename of tarball.}
 
 \item{registry_dir_new}{Target directory with for (new) registry files.}
 
@@ -76,25 +110,71 @@ or \code{download.file}, if \code{tarball} is specified.}
 
 \item{to}{Character string describing the target encoding of the corpus.}
 }
+\value{
+Logical value \code{TRUE} if installation has been successful.
+}
 \description{
-Utitlity functions to keep the installation of indexed CWB corpora wrapped
-into R data packages simple.
+Utility functions to assist the installation and management of indexed CWB
+corpora.
 }
 \details{
-A data package with a CWB corpus is assumed to include a directory
-  \code{/extdata/cwb/registry} for registry files and a directory
-  \code{/extdata/cwb/indexed_corpora} for the inexed corpus files. The
-  \code{corpus_install} function combines two steps necessary to install a
-  CWB corpus. First, it calls \code{install.packages}, then it resets the
-  path pointing to the directory with the indexed corpus files in the
-  registry file. The package will be installed to the standard library
-  directory for installing R packages (\code{.libPaths()[1]}). Another
-  location can be used by stating the param 'lib' explicitly (see
-  documentation for \code{\link{install.packages}}).
-  The function can also be used to install a corpus from a password protected
-  repository. Further parameters are handed over to install.packages, so you
-  might add \code{method = "wget" extra = "--user donald --password duck"}.
-  See examples how to check whether the directory has been set correctly.
+A CWB corpus consists a set of binary files with corpus data 
+  kept together in a data directory, and a registry file, which is a
+  plain test file that details the corpus id, corpus properties, 
+  structural and positional attributes. The registry file also specifies
+  the path to the corpus data directory. Typically, the registry directory
+  and a corpus directory with the data directories for individual corpora
+  are within one parent folder (which might be called "cwb" by default).
+  See the following stylized directory structure.
+
+\preformatted{
+  .
+  |- registry/
+  |  |- corpus1 
+  |  +- corpus2
+  |
+  + indexed_corpora/
+    |- corpus1/
+    |  |- file1
+    |  |- file2
+    |  +- file3
+    |
+    +- corpus2/
+       |- file1
+       |- file2
+       +- file3
+}
+
+The \code{corpus_install} function will assist the installation of a
+  corpus. The following scenarios are offered: 
+\itemize{
+  \item{If argument \code{tarball} is a local tarball, the tarball will
+  be extracted and files will be moved.}
+  \item{If \code{tarball} is a URL, the tarball will be downloaded from
+  the online location. It is possible to state user credentials using the
+  arguments \code{user} and \code{password}. Then the aforementioned
+  installation (scenario 1) is executed. If argument \code{pkg} is the
+  name of an installed package, corpus files will be moved into this 
+  package.}
+  \item{If argument \code{doi} is Document Object Identifier (DOI), the URL
+  from which a corpus tarball can be downloaded is derived from the
+  information available at that location. The tarball is downloaded and the
+  corpus installed. If argument \code{pkg} is defined, files will be moved
+  into a R package, the syste registry and corpus directories are used
+  otherwise. Note that at this stage, it is assumed that the DOI has been
+  awarded by \href{https://zenodo.org/}{Zenodo}}
+  \item{If argument \code{pkg} is provided and specifies an R package (and
+  \code{tarball} is \code{NULL}), the corpus package available at a
+  CRAN-style repository specified by argument \code{repo} will be installed.
+  Internally, the \code{install.packages} function is called and further
+  arguments can be passed into this function call. This can be used to pass
+  user credentials, e.g. by adding \code{method = "wget" extra = "--user
+  donald --password duck"}.
+  }
+}   
+If the corpus to be installed is already available, a dialogue will ask the
+user whether an existing corpus shall be deleted and installed anew, if
+argument \code{ask} is \code{TRUE}.
 
 \code{corpus_packages} will detect the packages that include CWB
   corpora. Note that the directory structure of all installed packages is
