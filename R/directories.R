@@ -90,6 +90,12 @@ cwb_registry_dir <- function(){
     }
   } else {
     if (nchar(Sys.getenv("CORPUS_REGISTRY")) > 0L){
+      if (isFALSE(file.exists(Sys.getenv("CORPUS_REGISTRY")))){
+        warning(
+          "The registry directory stated by the environment variable CORPUS_REGISTRY does not exist. ",
+          "This may be a cause for ensuing problems to find corpora."
+        )
+      }
       return(Sys.getenv("CORPUS_REGISTRY"))
     } else {
       return(NULL)
@@ -106,15 +112,18 @@ cwb_registry_dir <- function(){
 #' @rdname directories
 #' @export cwb_directories
 #' @importFrom utils menu
-#' @importFrom rstudioapi getSourceEditorContext
 cwb_directories <- function(registry_dir = NULL, corpus_dir = NULL){
   registry_dir <- if (is.null(registry_dir)) cwb_registry_dir() else registry_dir
-  c(
-    registry_dir = registry_dir, 
-    corpus_dir = if (is.null(corpus_dir)) cwb_corpus_dir(registry_dir) else corpus_dir
-  )
+  if (isFALSE(is.null(registry_dir))){
+    if (isFALSE(dir.exists(registry_dir))){
+      stop(sprintf("Registry directory '%s' does not exist.", registry_dir))
+    }
+  }
+  corpus_dir <- if (is.null(corpus_dir)) cwb_corpus_dir(registry_dir) else corpus_dir
+  c(registry_dir = registry_dir, corpus_dir = corpus_dir)
 }
 
+#' @param verbose A \code{logical} value, whether to output status messages.
 #' @details \code{create_cwb_directories} will create a 'registry' and an
 #'   'indexed_corpora' directory as subdirectories of the directory indicated by
 #'   argument \code{prefix}. Argument \code{ask} indicates whether to create
@@ -123,108 +132,196 @@ cwb_directories <- function(registry_dir = NULL, corpus_dir = NULL){
 #'   registry and the corpus directory.
 #' @rdname directories
 #' @export create_cwb_directories
-create_cwb_directories <- function(prefix = "~/cwb", ask = interactive()){
+#' @importFrom cli cat_rule
+create_cwb_directories <- function(prefix = "~/cwb", ask = interactive(), verbose = TRUE){
   
   prefix <- path.expand(prefix)
+
   if (dir.exists(prefix)){
-    message(
-      sprintf("Using directory '%s' as parent directory for registry directory and the corpus directory. ", prefix),
-      "(Directory already exists.)"
-    )
+    if (file.access(prefix, mode = 2) != 0L){
+      stop(sprintf("no write permissions for CWB data directory %s", prefix))
+    }
+    if (verbose){
+      cli_rule("Create CWB directories")
+      cli_alert_info(
+        sprintf("Using existing directory {.path %s} as parent directory for registry directory and the corpus directory.", prefix),
+        wrap = TRUE
+      )
+    }
   } else {
+    if (file.access(dirname(prefix), mode = 2) != 0L){
+      stop(sprintf("cannot create directory %s - no write permissions for parent directory %s", prefix, dirname(prefix)))
+    }
+    cli_rule("Create CWB directories")
     if (ask){
-      msg <- sprintf("Parent directory '%s' for registry directory and corpus directory is not yet available. Create it?", prefix)
-      answer <- utils::menu(choices = c("Yes / continue", "No / abort"), title = msg)
-      if (answer == 1L) dir.create(prefix, recursive = TRUE) else stop("Aborting.")
+      answer <- menu(
+        title = cli_text(sprintf("Create directory {.path %s} as parent directory for the registry directory and the corpus directory?", prefix)),
+        choices = c("Yes!", "I want to choose another directory.", "Cancel (user abort).")
+      )
+      if (answer == 1L){
+        dir.create(prefix, recursive = TRUE)
+      } else if (answer == 2L){
+        if (interactive()){
+          if (rstudioapi::isAvailable()){
+            prefix <- path.expand(rstudioapi::selectDirectory())
+          } else {
+            again <- TRUE
+            while (again){
+              prefix <- readline(prompt = "Please enter valid path (hit ENTER without input to abort): ")
+              if (nchar(prefix) == 0L) stop("user abort")
+              if (file.exists(dirname(prefix))) again <- FALSE
+            }
+            dir.create(prefix)
+          }
+        } else {
+          stop("not in interactive sessions - user cannot choose another directory.")
+        }
+      } else if (answer == 3L){
+        stop("user abort")
+      }
     } else {
       dir.create(prefix, recursive = TRUE)
     }
     if (dir.exists(prefix)){
-      message(sprintf("... parent directory '%s' for registry directory and corpus directory has been created successfully.", prefix))
+      if (verbose) cli_alert_success(sprintf("parent directory {.path %s} for registry directory and corpus directory has been created", prefix))
     } else {
-      warning(sprintf("Parent directory '%s' for registry directory and corpus directory not found / created!", prefix))
+      if (verbose) cli_alert_danger(sprintf("parent directory {.path %s} for registry directory and corpus directory not found / created!", prefix))
     }
   }
   
-  registry_dir <- file.path(prefix, "registry")
-  if (file.exists(registry_dir)){
-    msg <- sprintf(
-      "The registry directory %s exists, but is not defined by the environment variable CORPUS_REGISTRY.",
-      registry_dir
-    )
-    warning(msg)
-  } else {
-    if (ask){
-      msg <- sprintf("Registry directory '%s' does not yet exist. Create it?", registry_dir)
-      answer <- utils::menu(choices = c("Yes", "No"), title = msg)
-      if (answer == 1L) dir.create(registry_dir) else stop("Aborting.")
-      renviron_file <- use_corpus_registry_envvar(registry_dir = registry_dir)
-      if (grepl("\\.Renviron$", rstudioapi::getSourceEditorContext()[["path"]])){
-        message(
-          "The '.Renviron' file is still open. Insert definition of CORPUS_REGISTRY environment variable",
-          "as a line into the document, save and close the document to make the registry directory available across sessions."
-          )
-        readline(prompt = "Hit any key to proceed.")
-      }
-      if (any(grepl("^CORPUS_REGISTRY\\s*=\\s*.*?$", readLines(renviron_file)))){
-        message("Environment variable CORPUS_REGISTRY has been added successfully to .Renviron file.")
+  cwb_dirs <- c(
+    registry_dir = file.path(prefix, "registry"),
+    corpus_dir = file.path(prefix, "indexed_corpora")
+  )
+
+  for (dirtype in names(cwb_dirs)){
+    what <- gsub("^(.*?)_dir$", "\\1", dirtype)
+    if (file.exists(cwb_dirs[[dirtype]])){
+      if (verbose) cli_alert_info(sprintf("%s directory {.path %s} already exists", what, cwb_dirs[[dirtype]]))
+    } else {
+      dir.create(cwb_dirs[[dirtype]])
+      if (dir.exists(cwb_dirs[[dirtype]])){
+        if (verbose) cli_alert_success(sprintf("%s directory {.path %s} has been created", what, cwb_dirs[[dirtype]]))
       } else {
-        message(
-          "Environment variable CORPUS_REGISTRY not defined in .Renviron file. You will have to set the ",
-          sprintf('environmant variable by calling Sys.setenv("%s") to make corpora available.', registry_dir)
-        )
+        if (verbose) cli_alert_warning(sprintf("%s directory {.path %s} has not been created", what, cwb_dirs[[dirtype]]))
       }
-    } else {
-      dir.create(registry_dir)
     }
-    if (dir.exists(registry_dir)){
-      message(sprintf("... registry directory '%s' has been created successfully.", registry_dir))
-    } else {
-      warning(sprintf("Designated registry directory '%s' not found / created!", registry_dir))
-    }
-    message("... environment variable CORPUS_REGISTRY set as: ", registry_dir)
-    Sys.setenv(CORPUS_REGISTRY = registry_dir)
   }
   
-  # Create corpus_dir --------------
-  
-  corpus_dir <- file.path(prefix, "indexed_corpora")
-  if (file.exists(corpus_dir)){
-    warning(sprintf("The corpus directory '%s' already exists.", corpus_dir)
+  Sys.setenv(CORPUS_REGISTRY = cwb_dirs[["registry_dir"]])
+  if (verbose){
+    cli_alert_success(
+      sprintf("environment variable {.envvar CORPUS_REGISTRY} set as: {.path %s}", cwb_dirs[["registry_dir"]])
     )
-  } else {
-    if (ask){
-      msg <- sprintf("No corpus directory available. Create directory '%s'?", corpus_dir)
-      answer <- utils::menu(choices = c("Yes", "No"), title = msg)
-      if (answer == 1L) dir.create(corpus_dir, recursive = TRUE) else stop("Aborting.")
-    } else {
-      dir.create(corpus_dir)
-    }
-    if (dir.exists(corpus_dir)){
-      message(sprintf("... corpus directory '%s' has been created successfully.", corpus_dir))
-    } else {
-      warning(sprintf("Designated corpus directory '%s' not found / created!", corpus_dir))
-    }
-    
-    
-  }
-  c(registry_dir = registry_dir, corpus_dir = corpus_dir)
+  }  
+  
+  cwb_dirs
 }
 
 
 
-
-
-#' @details \code{use_corpus_registry_envvar} is an convenience function that
+#' @details \code{use_corpus_registry_envvar} is a convenience function that
 #'   will assist users to define the environment variable CORPUS_REGSITRY in the
-#'   .Renviron-file, so that it will be available across sessions.
+#'   .Renviron-file.  making it available across sessions. The function is
+#'   intended to be used in an interactive R session. An error is thrown if this
+#'   is not the case. The user will be prompted whether the cwbtools package
+#'   shall take care of creating / modifying the .Renviron-file. If not,
+#'   the file will be opened for manual modification with some instructions shown
+#'   in the terminal.
 #' @export use_corpus_registry_envvar
-#' @importFrom usethis edit_r_environ ui_todo ui_code_block ui_value ui_field
 #' @rdname directories
-use_corpus_registry_envvar <- function (registry_dir){
-  ui_todo(
-    "Include this line in file {ui_value('.Renviron')} to make \\\n    {ui_field(registry_dir)} available in all interactive R sessions."
+use_corpus_registry_envvar <- function(registry_dir){
+  
+  if (isFALSE(interactive())){
+    stop(
+      "Defining the environment variable CORPUS_REGISTRY in the .Renviron file ",
+      "is possible only when R is being used interactively."
+    )
+  }
+  
+  if (!dir.exists(registry_dir)){
+    stop("directory provided by argument registry_dir does not exist.")
+  }
+  
+  cli_rule("Define CORPUS_REGISTRY environmment variable in .Renviron file")
+  user_input <- menu(
+    choices = c("Yes", "No, I want to edit the .Renviron file myself"),
+    title = cli_text(
+      "I want the {.pkg cwbtools} package to set the {.envvar CORPUS_REGISTRY} environment variable ", 
+      "in the {.file .Renviron} file (see {.code ?Startup} for details)."
+    )
   )
-  ui_code_block(sprintf('\n    CORPUS_REGISTRY="%s"\n    ', registry_dir))
-  edit_r_environ("user")
+  
+  if (user_input == 1L){
+    
+    if (nchar(Sys.getenv("R_ENVIRON_USER")) > 0L){
+      renviron_file <- Sys.getenv("R_ENVIRON_USER")
+      cli_alert_info(sprintf("using {.path .Renviron}-file defined in the environment variable {.envvar R_ENVIRON_USER}: {.path %s}", renviron_file))
+    } else{
+      renviron_file <- path.expand("~/.Renviron")
+      cli_alert_info(sprintf("using default {.path .Renviron}-file: {.path %s}", renviron_file))
+    }
+    
+    if (file.exists(renviron_file)){
+      
+      if (file.access(renviron_file, mode = 2) == 0L){
+        cli_alert_info("the existing {.path .Renviron}-file exists and will be modified")
+      } else {
+        cli_alert_danger("you do not have write permissions for the {.path .Renviron} file - aborting")
+        return(FALSE)
+      }
+      
+      if (any(grepl("^\\s*CORPUS_REGISTRY\\s*=", readLines(renviron_file)))){
+        cli_alert_danger(
+          paste(
+            "the environment variable {.envvar CORPUS_REGISTRY} is already defined in the existing",
+            sprintf("{.path .Renviron} file ({.path %s}).", renviron_file),
+            "The file will not be changed. Please modify the file manually."
+          )
+        )
+        return(FALSE)
+      }
+      
+      cat(sprintf('CORPUS_REGISTRY="%s"\n', registry_dir), file = renviron_file, append = TRUE)
+      
+    } else {
+      cli_alert_info("the {.path .Renviron}-file does not yet exist and needs to be created")
+      renviron_dirname <- dirname(renviron_file)
+      if (file.access(renviron_dirname) != 0L){
+        cli_alert_danger(sprintf("you do not have write permissions for the directory {.path %s}  - aborting", renviron_dirname))
+      }
+      writeLines(text = sprintf('CORPUS_REGISTRY="%s"', registry_dir), con = renviron_file)
+    }
+    
+    if (any(grepl("^\\s*CORPUS_REGISTRY\\s*=", readLines(renviron_file)))){
+      cli_alert_success(
+        sprintf(
+          "the environment  variable {.envvar CORPUS_REGISTRY} is now defined as {.path %s} in the {.file .Renviron}-file ({.path %s})",
+          registry_dir, renviron_file
+        )
+      )
+      return(TRUE)
+    } else {
+      cli_alert_warning(
+        paste(
+          "the definition of the {.envvar CORPUS_REGISTRY} has been written to the {.path .Renviron}-file,",
+          "but cannot determine the success of the operation.",
+          sprintf("Please check file {.path %s} manually ", renviron_file)
+        )
+      )
+      return(FALSE)
+    }
+
+  } else if (user_input == 2L){
+    if (!requireNamespace("usethis", quietly = TRUE)){
+      stop("The package 'usethis' is required, but not available to modify the .Renviron file manually. ",
+           'Install it by calling install.packages("usethis").'
+      )
+    }
+    usethis::ui_todo(
+      "Include the following line in file {usethis::ui_value('.Renviron')} to make \\\n    {usethis::ui_field(registry_dir)} available as environment variable CORPUS_REGISTRY in all interactive R sessions:"
+    )
+    usethis::ui_code_block(sprintf('\n    CORPUS_REGISTRY="%s"\n    ', registry_dir))
+    usethis::edit_r_environ("user")
+  }
 }

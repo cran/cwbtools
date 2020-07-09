@@ -14,7 +14,7 @@ cwb_registry_dir()
 
 cwb_directories(registry_dir = NULL, corpus_dir = NULL)
 
-create_cwb_directories(prefix = "~/cwb", ask = interactive())
+create_cwb_directories(prefix = "~/cwb", ask = interactive(), verbose = TRUE)
 
 use_corpus_registry_envvar(registry_dir)
 }
@@ -27,6 +27,8 @@ use_corpus_registry_envvar(registry_dir)
 
 \item{ask}{A \code{logical} value, whether to prompt user before creating
 directories.}
+
+\item{verbose}{A \code{logical} value, whether to output status messages.}
 }
 \description{
 The Corpus Workbench (CWB) stores the binary files for
@@ -75,7 +77,12 @@ The Corpus Workbench (CWB) stores the binary files for
   directories. The function returns a named character vector with the
   registry and the corpus directory.
 
-\code{use_corpus_registry_envvar} is an convenience function that
+\code{use_corpus_registry_envvar} is a convenience function that
   will assist users to define the environment variable CORPUS_REGSITRY in the
-  .Renviron-file, so that it will be available across sessions.
+  .Renviron-file.  making it available across sessions. The function is
+  intended to be used in an interactive R session. An error is thrown if this
+  is not the case. The user will be prompted whether the cwbtools package
+  shall take care of creating / modifying the .Renviron-file. If not,
+  the file will be opened for manual modification with some instructions shown
+  in the terminal.
 }

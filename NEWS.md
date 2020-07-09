@@ -1,3 +1,44 @@
+cwbtools 0.3.0
+==============
+
+## NEW FEATURES
+
+* The `corpus_install()` gives much better and nicer reports on steps performed during 
+corpus downloads. User dialogues have been reworked thoroughly to provide better user guidance.
+* The `use_corpus_registry_envvar()` function is called by `corpus_install()` and will
+amend the .Renviron file as appropriate if the user so desires.
+* To resolve a DOI, the 'zen4R' package is used, to extract information on the whereabouts
+of a corpus tarball efficiently from the Zenodo API.
+* A `corpus_testload()` has been implemented to check whether a (newly installed) corpus
+is accessible.
+
+
+## MINOR IMPROVEMENTS
+
+* Extracting the version number from the corpus tarball is somewhat more forgiving if the
+version number does not start with "v".
+* The registry file for a newly downloaded corpus is refreshed only if a temporary registry directory is used.
+* To remedy the fairly common error that the path to the info file is not stated correctly in the registry file, a fallback mechanism will look up potential alternatives to an info file stated wrongly. 
+
+
+## BUG FIXES
+
+* The json string returned from Zenodo may include newline strings that are escaped such
+that they cannot be processed by `jsonlite::fromJSON()`. The auxiliary function to get and 
+process information from Zenodo now ensures that newline characters are escaped such that 
+they can be processed.
+* The `corpus_copy()` function did not set the path to the info file to the new data directory - corrected.
+* The `corpus_install()` function failed when the `registry_dir` got a `NULL` value from the default call to `cwbtools::cwb_registry_dir()`. But if the directories are created, the registry directory is there. Fixed.
+* Removed a bug (faulty assignment) that would prevent that the path of a registry file 
+is handled correctly (i.e. wrapped in quotation marks) by `registry_file_compose()` when the 
+path includes any whitespace characters.
+
+
+## DOCUMENTATION FIXES
+
+* A problem with updating the `curl` dependency of `cwbtools` that may arise when `devtools::install_github()` is used is addressed in an extended explanation in the README.md file how to install the development version of `cwbtools` using `remotes::install_github()` (#21).
+
+
 cwbtools 0.2.0
 ==============
 

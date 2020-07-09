@@ -1,8 +1,8 @@
 Package: cwbtools
 Type: Package
-Title: Tools to create, modify and manage 'CWB' Corpora
-Version: 0.2.0
-Date: 2020-04-13
+Title: Tools to Create, Modify and Manage 'CWB' Corpora
+Version: 0.3.0
+Date: 2020-06-24
 Authors@R: c(person("Andreas", "Blaette", role = c("aut", "cre"), email = "andreas.blaette@uni-due.de"),
   person("Christoph", "Leonhardt", role = "ctb", email = "christoph.leonhardt@uni-due.de")
   )
@@ -20,9 +20,10 @@ Description: The 'Corpus Workbench' ('CWB', <http://cwb.sourceforge.net/>) offer
  to support the combination of quantitative and qualitative approaches for working
  with textual data.
 Imports: data.table, R6, xml2, stringi, curl, RcppCWB (>= 0.2.8),
-        pbapply, methods, usethis, rstudioapi, jsonlite, RCurl
+        pbapply, methods, cli, jsonlite, RCurl, rstudioapi, zen4R
 Suggests: tm (>= 0.7.3), knitr, tokenizers (>= 0.2.1), tidytext,
-        SnowballC, janeaustenr, devtools, polmineR, NLP, testthat
+        SnowballC, janeaustenr, devtools, polmineR, NLP, testthat,
+        usethis, rmarkdown
 VignetteBuilder: knitr
 LazyData: yes
 License: GPL-3
@@ -32,12 +33,12 @@ URL: https://www.github.com/PolMine/cwbtools
 BugReports: https://github.com/PolMine/cwbtools/issues
 Collate: 'CorpusData.R' 'corpus.R' 'cwb.R' 'cwbtools.R' 'directories.R'
         'encoding.R' 'ner.R' 'p_attribute.R' 'pkg.R' 'registry_file.R'
-        's_attribute.R' 'zenodo.R'
-RoxygenNote: 7.0.2
+        's_attribute.R'
+RoxygenNote: 7.1.0
 NeedsCompilation: no
-Packaged: 2020-04-14 12:53:46 UTC; andreasblaette
+Packaged: 2020-07-09 08:08:32 UTC; andreasblaette
 Author: Andreas Blaette [aut, cre],
   Christoph Leonhardt [ctb]
 Maintainer: Andreas Blaette <andreas.blaette@uni-due.de>
 Repository: CRAN
-Date/Publication: 2020-04-14 13:10:03 UTC
+Date/Publication: 2020-07-09 12:20:03 UTC

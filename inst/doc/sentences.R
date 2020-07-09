@@ -1,12 +1,12 @@
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  library(cwbtools)
 #  library(polmineR)
 #  use("polmineR")
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  # Yet to be written
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  pos <- corpus("GERMAPARL") %>%
 #    get_token_stream(p_attribute = "pos")
 #  
@@ -28,10 +28,10 @@
 #  colnames(df) <- c("cpos_left", "cpos_right")
 #  df[["sentence"]] <- seq.int(from = 0L, to = nrow(df) - 1L)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  head(df)
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  s_attribute_encode(
 #    values = as.character(df[["sentence"]]),
 #    data_dir = cwbtools::registry_file_parse(corpus = "GERMAPARL")[["home"]],
@@ -45,6 +45,6 @@
 #    verbose = TRUE
 #  )
 
-## ---- eval = FALSE-------------------------------------------------------
+## ---- eval = FALSE------------------------------------------------------------
 #  k <- kwic("GERMAPARL", query = "Integration", left = 30, right = 30, boundary = "s")
 

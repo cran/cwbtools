@@ -8,6 +8,7 @@
 \alias{corpus_as_tarball}
 \alias{corpus_copy}
 \alias{corpus_recode}
+\alias{corpus_testload}
 \title{Install and manage corpora.}
 \usage{
 corpus_install(
@@ -58,6 +59,12 @@ corpus_recode(
   to = c("latin1", "UTF-8"),
   verbose = TRUE
 )
+
+corpus_testload(
+  corpus,
+  registry_dir = Sys.getenv("CORPUS_REGISTRY"),
+  verbose = TRUE
+)
 }
 \arguments{
 \item{pkg}{Name of the data package.}
@@ -67,8 +74,7 @@ corpus_recode(
 \item{tarball}{The URL or local path to a tarball with a CWB indexed corpus.}
 
 \item{doi}{The DOI (Digital Object Identifier) of a corpus deposited at
-Zenodo, presented as a hyperlink. (For testing purposes, use
-("https://doi.org/10.5281/zenodo.3748858".)}
+Zenodo (e.g. "10.5281/zenodo.3748858".)}
 
 \item{lib}{Directory for R packages, defaults to \code{.libPaths()[1]}.}
 
@@ -184,7 +190,7 @@ argument \code{ask} is \code{TRUE}.
   registry file, the corpus id, and the name of the directory where data
   files reside.
 
-\code{corpus_remove} can be used to drop a corpus.
+\code{corpus_remove} can be used to delete a corpus.
 
 \code{corpus_as_tarball} will create a tarball (.tar.gz-file) with
   two subdirectories. The 'registry' subdirectory will host the registry file
