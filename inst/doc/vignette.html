@@ -12,10 +12,74 @@
 
 <meta name="author" content="Andreas Blätte (andreas.blaette@uni-due.de)" />
 
-<meta name="date" content="2020-07-21" />
+<meta name="date" content="2021-02-17" />
 
 <title>Introducing ‘cwbtools’</title>
 
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+<style type="text/css">
+a.anchor-section {margin-left: 10px; visibility: hidden; color: inherit;}
+a.anchor-section::before {content: '#';}
+.hasAnchor:hover a.anchor-section {visibility: visible;}
+</style>
+<script>// Anchor sections v1.0 written by Atsushi Yasumoto on Oct 3rd, 2020.
+document.addEventListener('DOMContentLoaded', function() {
+  // Do nothing if AnchorJS is used
+  if (typeof window.anchors === 'object' && anchors.hasOwnProperty('hasAnchorJSLink')) {
+    return;
+  }
+
+  const h = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+  // Do nothing if sections are already anchored
+  if (Array.from(h).some(x => x.classList.contains('hasAnchor'))) {
+    return null;
+  }
+
+  // Use section id when pandoc runs with --section-divs
+  const section_id = function(x) {
+    return ((x.classList.contains('section') || (x.tagName === 'SECTION'))
+            ? x.id : '');
+  };
+
+  // Add anchors
+  h.forEach(function(x) {
+    const id = x.id || section_id(x.parentElement);
+    if (id === '') {
+      return null;
+    }
+    let anchor = document.createElement('a');
+    anchor.href = '#' + id;
+    anchor.classList = ['anchor-section'];
+    x.classList.add('hasAnchor');
+    x.appendChild(anchor);
+  });
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
 <style type="text/css">code{white-space: pre;}</style>
@@ -303,7 +367,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Introducing ‘cwbtools’</h1>
 <h4 class="author">Andreas Blätte (<a href="mailto:andreas.blaette@uni-due.de" class="email">andreas.blaette@uni-due.de</a>)</h4>
-<h4 class="date">2020-07-21</h4>
+<h4 class="date">2021-02-17</h4>
 
 
 
@@ -395,8 +459,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb15-5"><a href="#cb15-5"></a>  <span class="dt">p_attributes =</span> <span class="st">&quot;word&quot;</span>, <span class="dt">s_attributes =</span> <span class="kw">character</span>(),</span>
 <span id="cb15-6"><a href="#cb15-6"></a>  <span class="dt">compress =</span> <span class="ot">FALSE</span></span>
 <span id="cb15-7"><a href="#cb15-7"></a>  )</span></code></pre></div>
-<pre><code>## === Makeall: processing corpus UNGA ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpqkAojy/registry
+<pre><code>## Corpus to delete (ID): UNGA
+## Corpus name: UNGA
+## Number of loads before reset: 1
+## Number of loads resetted: 1
+## === Makeall: processing corpus UNGA ===
+## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpIYvr5I/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
@@ -482,13 +550,34 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>Ready to encode the corpus!</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>Austen<span class="op">$</span><span class="kw">encode</span>(</span>
 <span id="cb27-2"><a href="#cb27-2"></a>   <span class="dt">corpus =</span> <span class="st">&quot;AUSTEN&quot;</span>, <span class="dt">encoding =</span> <span class="st">&quot;utf8&quot;</span>,</span>
-<span id="cb27-3"><a href="#cb27-3"></a>   <span class="dt">p_attributes =</span> <span class="st">&quot;word&quot;</span>, <span class="dt">s_attributes =</span> <span class="st">&quot;book&quot;</span>,</span>
+<span id="cb27-3"><a href="#cb27-3"></a>   <span class="dt">p_attributes =</span> <span class="kw">c</span>(<span class="st">&quot;word&quot;</span>, <span class="st">&quot;stem&quot;</span>), <span class="dt">s_attributes =</span> <span class="st">&quot;book&quot;</span>,</span>
 <span id="cb27-4"><a href="#cb27-4"></a>   <span class="dt">registry_dir =</span> registry_tmp, <span class="dt">data_dir =</span> austen_data_dir_tmp,</span>
 <span id="cb27-5"><a href="#cb27-5"></a>   <span class="dt">method =</span> <span class="st">&quot;R&quot;</span>, <span class="dt">compress =</span> <span class="ot">FALSE</span></span>
 <span id="cb27-6"><a href="#cb27-6"></a>)</span></code></pre></div>
-<pre><code>## === Makeall: processing corpus AUSTEN ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpqkAojy/registry
+<pre><code>## Corpus to delete (ID): AUSTEN
+## Corpus name: AUSTEN
+## Number of loads before reset: 1
+## Number of loads resetted: 1
+## === Makeall: processing corpus AUSTEN ===
+## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpIYvr5I/registry
 ## ATTRIBUTE word
+##  + creating LEXSRT ... OK
+##  - lexicon      OK
+##  + creating FREQS ... OK
+##  - frequencies  OK
+##  - token stream OK
+##  + creating REVCIDX ... OK
+##  + creating REVCORP ... OK
+##  ? validating REVCORP ... OK
+##  - index        OK
+## ========================================
+## Corpus to delete (ID): AUSTEN
+## Corpus name: AUSTEN
+## Number of loads before reset: 2
+## Number of loads resetted: 1
+## === Makeall: processing corpus AUSTEN ===
+## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpIYvr5I/registry
+## ATTRIBUTE stem
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
 ##  + creating FREQS ... OK
@@ -506,7 +595,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>corpus &lt;-<span class="st"> &quot;AUSTEN&quot;</span></span>
 <span id="cb31-2"><a href="#cb31-2"></a>token &lt;-<span class="st"> &quot;pride&quot;</span></span>
 <span id="cb31-3"><a href="#cb31-3"></a>p_attr &lt;-<span class="st"> &quot;word&quot;</span></span>
-<span id="cb31-4"><a href="#cb31-4"></a>id &lt;-<span class="st"> </span><span class="kw">cl_str2id</span>(<span class="dt">corpus =</span> corpus, <span class="dt">p_attribute =</span> p_attr, <span class="dt">str =</span> token, <span class="dt">registry =</span> registry_tmp)</span>
+<span id="cb31-4"><a href="#cb31-4"></a>id &lt;-<span class="st"> </span>RcppCWB<span class="op">::</span><span class="kw">cl_str2id</span>(<span class="dt">corpus =</span> corpus, <span class="dt">p_attribute =</span> p_attr, <span class="dt">str =</span> token, <span class="dt">registry =</span> registry_tmp)</span>
 <span id="cb31-5"><a href="#cb31-5"></a>cpos &lt;-<span class="st"> </span><span class="kw">cl_id2cpos</span>(<span class="dt">corpus =</span> corpus, <span class="dt">p_attribute =</span> p_attr, <span class="dt">id =</span> id, <span class="dt">registry =</span> registry_tmp)</span>
 <span id="cb31-6"><a href="#cb31-6"></a>count &lt;-<span class="st"> </span><span class="kw">length</span>(cpos)</span>
 <span id="cb31-7"><a href="#cb31-7"></a>count</span></code></pre></div>
@@ -593,8 +682,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb43-5"><a href="#cb43-5"></a>   <span class="dt">data_dir =</span> data_dir_tmp,</span>
 <span id="cb43-6"><a href="#cb43-6"></a>   <span class="dt">method =</span> <span class="st">&quot;R&quot;</span>, <span class="dt">compress =</span> <span class="ot">FALSE</span></span>
 <span id="cb43-7"><a href="#cb43-7"></a>)</span></code></pre></div>
-<pre><code>## === Makeall: processing corpus REUTERS ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpqkAojy/registry
+<pre><code>## Corpus to delete (ID): REUTERS
+## Corpus name: REUTERS
+## Number of loads before reset: 1
+## Number of loads resetted: 1
+## === Makeall: processing corpus REUTERS ===
+## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpIYvr5I/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK

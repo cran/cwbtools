@@ -1,0 +1,66 @@
+## ----packages-----------------------------------------------------------------
+library(cwbtools)
+library(RcppCWB)
+library(NLP)
+library(openNLP)
+library(data.table)
+
+## ----decode_word, eval = TRUE-------------------------------------------------
+corpus_size <- cl_attribute_size("UNGA", attribute = "word", attribute_type ="p")
+dt <- data.table(cpos = 0L:(corpus_size - 1L))
+dt <- dt[, "id" := cl_cpos2id("UNGA", p_attribute = "word", cpos = dt[["cpos"]])]
+dt[, "word" := cl_id2str("UNGA", p_attribute = "word", id = dt[["id"]])]
+
+## ----get_txt, eval = TRUE-----------------------------------------------------
+dt[, "whitespace" := c(ifelse(word %in% c(".", ",", ":", "!", "?", ";"), FALSE, TRUE)[2L:length(word)], FALSE)]
+txt <- String(paste(paste(dt[["word"]], ifelse(dt[["whitespace"]], " ", ""), sep = ""), collapse = ""))
+
+## ----word_offset_annotation, eval = TRUE--------------------------------------
+dt[, "nchar" := sapply(dt[["word"]], nchar)]
+dt[, "start" := c(1L, (cumsum(dt[["nchar"]] + dt[["whitespace"]]) + 1L)[1L:(nrow(dt) - 1L)])]
+dt[, "end" := (dt[["start"]] + dt[["nchar"]] - 1L)]
+
+w <- NLP::Annotation(
+  id = dt[["cpos"]],
+  rep.int("word", nrow(dt)),
+  start = dt[["start"]],
+  end = dt[["end"]]
+)
+
+## ----sentence_annotation, eval = TRUE-----------------------------------------
+sentence_annotator <- Maxent_Sent_Token_Annotator()
+s <- annotate(s = txt, f = sentence_annotator)
+
+spans <- as.data.table((as.Span(s)))[, "sentence" := 1L:length(s)]
+spans[, "cpos_left" := dt[, c("cpos", "start", "end")][spans, on = "start"][["cpos"]]]
+spans[, "cpos_right" := dt[, c("cpos", "start", "end")][spans, on = "end"][["cpos"]]]
+regions <- spans[, c("cpos_left", "cpos_right", "sentence")]
+
+## ----pos_annotation, eval = FALSE---------------------------------------------
+#  pos_annotator <- Maxent_POS_Tag_Annotator(language = "en", probs = FALSE, model = NULL)
+#  p <- annotate(s = txt, f = pos_annotator, a = c(w, s))
+#  pos <- unlist(lapply(as.data.frame(p)[["features"]], `[[`, "POS"))
+
+## ---- eval = FALSE------------------------------------------------------------
+#  install.packages(pkgs = "openNLPmodels.en", repos = "https://datacube.wu.ac.at")
+#  
+#  ne_annotator <- Maxent_Entity_Annotator(
+#    language = "en",
+#    kind = "person",
+#    probs = FALSE,
+#    model = NULL
+#  )
+#  ne <- annotate(s = txt, f = ne_annotator, a = c(w, s))
+#  
+#  ne_min <- subset(ne, type == "entity")
+#  spans <- as.data.table((as.Span(ne_min)))
+#  spans[, "cpos_left" := dt[, c("cpos", "start", "end")][spans, on = "start"][["cpos"]]]
+#  spans[, "cpos_right" := dt[, c("cpos", "start", "end")][spans, on = "end"][["cpos"]]]
+#  spans[, "ne" := sapply(as.data.frame(ne_min)[["features"]], `[[`, "kind")]
+#  regions <- spans[, c("cpos_left", "cpos_right", "ne")]
+#  
+#  txt <- regions[, {paste(dt[cpos %in% .SD[["cpos_left"]]:.SD[["cpos_right"]]][["word"]], collapse = " ")}, by = "cpos_left", .SDcols = c("cpos_left", "cpos_right")][["V1"]]
+
+## ---- eval = FALSE------------------------------------------------------------
+#  pos <- unlist(lapply(as.data.frame(p)[["features"]], `[[`, "POS"))
+

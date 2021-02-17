@@ -124,7 +124,7 @@ Austen$tokenstream
 ## ---- message = FALSE---------------------------------------------------------
 Austen$encode(
    corpus = "AUSTEN", encoding = "utf8",
-   p_attributes = "word", s_attributes = "book",
+   p_attributes = c("word", "stem"), s_attributes = "book",
    registry_dir = registry_tmp, data_dir = austen_data_dir_tmp,
    method = "R", compress = FALSE
 )
@@ -136,7 +136,7 @@ cqp_reset_registry(registry = registry_tmp)
 corpus <- "AUSTEN"
 token <- "pride"
 p_attr <- "word"
-id <- cl_str2id(corpus = corpus, p_attribute = p_attr, str = token, registry = registry_tmp)
+id <- RcppCWB::cl_str2id(corpus = corpus, p_attribute = p_attr, str = token, registry = registry_tmp)
 cpos <- cl_id2cpos(corpus = corpus, p_attribute = p_attr, id = id, registry = registry_tmp)
 count <- length(cpos)
 count

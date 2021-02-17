@@ -12,10 +12,74 @@
 
 <meta name="author" content="Andreas Blätte (andreas.blaette@uni-due.de)" />
 
-<meta name="date" content="2020-07-21" />
+<meta name="date" content="2021-02-17" />
 
 <title>How to add a sentence annotation to an indexed corpus</title>
 
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+<style type="text/css">
+a.anchor-section {margin-left: 10px; visibility: hidden; color: inherit;}
+a.anchor-section::before {content: '#';}
+.hasAnchor:hover a.anchor-section {visibility: visible;}
+</style>
+<script>// Anchor sections v1.0 written by Atsushi Yasumoto on Oct 3rd, 2020.
+document.addEventListener('DOMContentLoaded', function() {
+  // Do nothing if AnchorJS is used
+  if (typeof window.anchors === 'object' && anchors.hasOwnProperty('hasAnchorJSLink')) {
+    return;
+  }
+
+  const h = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+
+  // Do nothing if sections are already anchored
+  if (Array.from(h).some(x => x.classList.contains('hasAnchor'))) {
+    return null;
+  }
+
+  // Use section id when pandoc runs with --section-divs
+  const section_id = function(x) {
+    return ((x.classList.contains('section') || (x.tagName === 'SECTION'))
+            ? x.id : '');
+  };
+
+  // Add anchors
+  h.forEach(function(x) {
+    const id = x.id || section_id(x.parentElement);
+    if (id === '') {
+      return null;
+    }
+    let anchor = document.createElement('a');
+    anchor.href = '#' + id;
+    anchor.classList = ['anchor-section'];
+    x.classList.add('hasAnchor');
+    x.appendChild(anchor);
+  });
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
 
 
 <style type="text/css">code{white-space: pre;}</style>
@@ -303,65 +367,97 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">How to add a sentence annotation to an indexed corpus</h1>
 <h4 class="author">Andreas Blätte (<a href="mailto:andreas.blaette@uni-due.de" class="email">andreas.blaette@uni-due.de</a>)</h4>
-<h4 class="date">2020-07-21</h4>
+<h4 class="date">2021-02-17</h4>
 
 
 
 <div id="about" class="section level2">
 <h2>About</h2>
-<p>There are many reasons why encoding an annotation of sentences as a structural attribute may be valuable. This vignette offers a basic recipe for a corpus that already includes a part-of-speech annotation. The GermaParl corpus serves as an example.</p>
+<p>Adding an annotation of sentences as a structural attribute to an existing is a frequent scenario. This vignette offers a basic recipe for a corpus that already includes a part-of-speech annotation. The GermaParlSamplee corpus serves as an example.</p>
 </div>
 <div id="getting-started" class="section level2">
 <h2>Getting started</h2>
-<p>In addition to the cwbtools package, we use some functionality of the polmineR package.</p>
+<p>In addition to the <strong>cwbtools</strong> package, we use the functionality of the <a href="https://CRAN.R-project.org/package=RcppCWB">RcppCWB</a> package to decode the p-attribute ‘pos’. The same could be achieved using the higher-level <code>get_token_stream()</code> method of the <a href="https://CRAN.R-project.org/package=polmineR">polmineR</a> package, but we want to avoid creating an additional dependency of this package.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(cwbtools)</span>
-<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(polmineR)</span>
-<span id="cb1-3"><a href="#cb1-3"></a><span class="kw">use</span>(<span class="st">&quot;polmineR&quot;</span>)</span></code></pre></div>
-<p>Adding an s-attribute is not a risky operation. The attribute can be removed again. Nevertheless, we use a temporary copy here.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="co"># Yet to be written</span></span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(RcppCWB)</span></code></pre></div>
+<p>For the purposes of this vigneette, ee will work with a temporary corpy of the corpus we wish to augment, so we create a temporary corpus directory.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>corpus_dir_tmp &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">tempdir</span>(), <span class="st">&quot;corpus_dir_tmp&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">dir.create</span>(<span class="dt">path =</span> corpus_dir_tmp)</span></code></pre></div>
+<p>The GermaParlSample corpus can be downloaded from <a href="https://doi.org/10.5281/zenodo.3823245">Zenodo</a> as follows.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>cwbtools<span class="op">::</span><span class="kw">corpus_install</span>(</span>
+<span id="cb3-2"><a href="#cb3-2"></a>  <span class="dt">doi =</span> <span class="st">&quot;10.5281/zenodo.3823245&quot;</span>,</span>
+<span id="cb3-3"><a href="#cb3-3"></a>  <span class="dt">registry_dir =</span> <span class="kw">Sys.getenv</span>(<span class="st">&quot;CORPUS_REGISTRY&quot;</span>),</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  <span class="dt">corpus_dir =</span> corpus_dir_tmp,</span>
+<span id="cb3-5"><a href="#cb3-5"></a>  <span class="dt">verbose =</span> <span class="ot">FALSE</span></span>
+<span id="cb3-6"><a href="#cb3-6"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">list.files</span>(<span class="kw">file.path</span>(corpus_dir_tmp, <span class="st">&quot;germaparlsample&quot;</span>))</span></code></pre></div>
+<pre><code>##  [1] &quot;date.avs&quot;         &quot;date.avx&quot;         &quot;date.rng&quot;         &quot;interjection.avs&quot;
+##  [5] &quot;interjection.avx&quot; &quot;interjection.rng&quot; &quot;party.avs&quot;        &quot;party.avx&quot;       
+##  [9] &quot;party.rng&quot;        &quot;pos.corpus.cnt&quot;   &quot;pos.crc&quot;          &quot;pos.crx&quot;         
+## [13] &quot;pos.hcd&quot;          &quot;pos.huf&quot;          &quot;pos.huf.syn&quot;      &quot;pos.lexicon&quot;     
+## [17] &quot;pos.lexicon.idx&quot;  &quot;pos.lexicon.srt&quot;  &quot;speaker.avs&quot;      &quot;speaker.avx&quot;     
+## [21] &quot;speaker.rng&quot;      &quot;template.json&quot;    &quot;word.corpus.cnt&quot;  &quot;word.crc&quot;        
+## [25] &quot;word.crx&quot;         &quot;word.hcd&quot;         &quot;word.huf&quot;         &quot;word.huf.syn&quot;    
+## [29] &quot;word.lexicon&quot;     &quot;word.lexicon.idx&quot; &quot;word.lexicon.srt&quot;</code></pre>
 </div>
 <div id="recipe" class="section level2">
 <h2>Recipe</h2>
 <p>We generate the data for the sentence annotation from the part-of-speech annotation that is already present.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>pos &lt;-<span class="st"> </span><span class="kw">corpus</span>(<span class="st">&quot;GERMAPARL&quot;</span>) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="st">  </span><span class="kw">get_token_stream</span>(<span class="dt">p_attribute =</span> <span class="st">&quot;pos&quot;</span>)</span>
-<span id="cb3-3"><a href="#cb3-3"></a></span>
-<span id="cb3-4"><a href="#cb3-4"></a>sentence_end &lt;-<span class="st"> </span><span class="kw">grep</span>(<span class="st">&quot;</span><span class="ch">\\</span><span class="st">$</span><span class="ch">\\</span><span class="st">.&quot;</span>, pos)</span>
-<span id="cb3-5"><a href="#cb3-5"></a></span>
-<span id="cb3-6"><a href="#cb3-6"></a>cpos_sentences &lt;-<span class="st"> </span><span class="kw">cut</span>(</span>
-<span id="cb3-7"><a href="#cb3-7"></a>  <span class="dt">x =</span> <span class="kw">seq.int</span>(<span class="dt">from =</span> 0L, <span class="dt">to =</span> <span class="kw">length</span>(pos) <span class="op">-</span><span class="st"> </span>1L),</span>
-<span id="cb3-8"><a href="#cb3-8"></a>  <span class="dt">breaks =</span> <span class="kw">c</span>(0L, sentence_end),</span>
-<span id="cb3-9"><a href="#cb3-9"></a>  <span class="dt">include.lowest =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb3-10"><a href="#cb3-10"></a>  <span class="dt">right =</span> <span class="ot">FALSE</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a>)</span>
-<span id="cb3-12"><a href="#cb3-12"></a></span>
-<span id="cb3-13"><a href="#cb3-13"></a>df &lt;-<span class="st"> </span><span class="kw">split</span>(<span class="dt">x =</span> cpos, <span class="dt">f =</span> cpos_sentences) <span class="op">%&gt;%</span></span>
-<span id="cb3-14"><a href="#cb3-14"></a><span class="st">  </span><span class="kw">lapply</span>(<span class="cf">function</span>(cpos) <span class="kw">c</span>(cpos[1L], cpos[<span class="kw">length</span>(cpos)])) <span class="op">%&gt;%</span></span>
-<span id="cb3-15"><a href="#cb3-15"></a><span class="st">  </span><span class="kw">unlist</span>() <span class="op">%&gt;%</span></span>
-<span id="cb3-16"><a href="#cb3-16"></a><span class="st">  </span><span class="kw">matrix</span>(<span class="dt">ncol =</span> 2L, <span class="dt">byrow =</span> <span class="ot">TRUE</span>) <span class="op">%&gt;%</span></span>
-<span id="cb3-17"><a href="#cb3-17"></a><span class="st">  </span><span class="kw">data.frame</span>()</span>
-<span id="cb3-18"><a href="#cb3-18"></a></span>
-<span id="cb3-19"><a href="#cb3-19"></a><span class="kw">colnames</span>(df) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;cpos_left&quot;</span>, <span class="st">&quot;cpos_right&quot;</span>)</span>
-<span id="cb3-20"><a href="#cb3-20"></a>df[[<span class="st">&quot;sentence&quot;</span>]] &lt;-<span class="st"> </span><span class="kw">seq.int</span>(<span class="dt">from =</span> 0L, <span class="dt">to =</span> <span class="kw">nrow</span>(df) <span class="op">-</span><span class="st"> </span>1L)</span></code></pre></div>
-<p>So let us see what we have …</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">head</span>(df)</span></code></pre></div>
+<p>At first, we decode the p-attribute “pos”.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>germaparl_size &lt;-<span class="st"> </span><span class="kw">cl_attribute_size</span>(</span>
+<span id="cb6-2"><a href="#cb6-2"></a>  <span class="dt">corpus =</span> <span class="st">&quot;GERMAPARLSAMPLE&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3"></a>  <span class="dt">attribute =</span> <span class="st">&quot;word&quot;</span>, <span class="dt">attribute_type =</span> <span class="st">&quot;p&quot;</span></span>
+<span id="cb6-4"><a href="#cb6-4"></a>)</span>
+<span id="cb6-5"><a href="#cb6-5"></a>cpos_vec &lt;-<span class="st"> </span><span class="kw">seq.int</span>(<span class="dt">from =</span> 0L, <span class="dt">to =</span> germaparl_size <span class="op">-</span><span class="st"> </span>1L)</span>
+<span id="cb6-6"><a href="#cb6-6"></a>ids &lt;-<span class="st"> </span><span class="kw">cl_cpos2id</span>(<span class="dt">corpus =</span> <span class="st">&quot;GERMAPARLSAMPLE&quot;</span>, <span class="dt">p_attribute =</span> <span class="st">&quot;pos&quot;</span>, <span class="dt">cpos =</span> cpos_vec)</span>
+<span id="cb6-7"><a href="#cb6-7"></a>pos &lt;-<span class="st"> </span><span class="kw">cl_id2str</span>(<span class="dt">corpus =</span> <span class="st">&quot;GERMAPARLSAMPLE&quot;</span>, <span class="dt">p_attribute =</span> <span class="st">&quot;pos&quot;</span>, <span class="dt">id =</span> ids)</span></code></pre></div>
+<p>The pos-tag for Stuttgart Tuebingen Tag Set (STTS) is a “$.”. From this information, we can generate a region matrix with start and end corpus positions of sentences easily.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>sentence_end &lt;-<span class="st"> </span><span class="kw">grep</span>(<span class="st">&quot;</span><span class="ch">\\</span><span class="st">$</span><span class="ch">\\</span><span class="st">.&quot;</span>, pos)</span>
+<span id="cb7-2"><a href="#cb7-2"></a>sentence_factor &lt;-<span class="st"> </span><span class="kw">cut</span>(<span class="dt">x =</span> cpos_vec, <span class="dt">breaks =</span> <span class="kw">c</span>(0L, sentence_end), <span class="dt">include.lowest =</span> <span class="ot">TRUE</span>, <span class="dt">right =</span> <span class="ot">FALSE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3"></a>sentences_cpos &lt;-<span class="st"> </span><span class="kw">unname</span>(<span class="kw">split</span>(<span class="dt">x =</span> cpos_vec, <span class="dt">f =</span> sentence_factor))</span>
+<span id="cb7-4"><a href="#cb7-4"></a>region_matrix &lt;-<span class="st"> </span><span class="kw">do.call</span>(rbind, <span class="kw">lapply</span>(sentences_cpos, <span class="cf">function</span>(cpos) <span class="kw">c</span>(cpos[1L], cpos[<span class="kw">length</span>(cpos)])))</span></code></pre></div>
+<p>So let us see what this looks like …</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="kw">head</span>(region_matrix)</span></code></pre></div>
+<pre><code>##      [,1] [,2]
+## [1,]    0    9
+## [2,]   10   25
+## [3,]   26   35
+## [4,]   36   52
+## [5,]   53   64
+## [6,]   65   86</code></pre>
 <p>And this is how the new annotation layer is written back to the corpus.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">s_attribute_encode</span>(</span>
-<span id="cb5-2"><a href="#cb5-2"></a>  <span class="dt">values =</span> <span class="kw">as.character</span>(df[[<span class="st">&quot;sentence&quot;</span>]]),</span>
-<span id="cb5-3"><a href="#cb5-3"></a>  <span class="dt">data_dir =</span> cwbtools<span class="op">::</span><span class="kw">registry_file_parse</span>(<span class="dt">corpus =</span> <span class="st">&quot;GERMAPARL&quot;</span>)[[<span class="st">&quot;home&quot;</span>]],</span>
-<span id="cb5-4"><a href="#cb5-4"></a>  <span class="dt">s_attribute =</span> <span class="st">&quot;s&quot;</span>,</span>
-<span id="cb5-5"><a href="#cb5-5"></a>  <span class="dt">corpus =</span> <span class="st">&quot;GERMAPARL&quot;</span>,</span>
-<span id="cb5-6"><a href="#cb5-6"></a>  <span class="dt">region_matrix =</span> <span class="kw">as.matrix</span>(df[,<span class="kw">c</span>(<span class="st">&quot;cpos_left&quot;</span>, <span class="st">&quot;cpos_right&quot;</span>)]),</span>
-<span id="cb5-7"><a href="#cb5-7"></a>  <span class="dt">method =</span> <span class="st">&quot;R&quot;</span>,</span>
-<span id="cb5-8"><a href="#cb5-8"></a>  <span class="dt">registry_dir =</span> <span class="kw">registry</span>(<span class="dt">pkg =</span> <span class="st">&quot;GERMAPARL&quot;</span>),</span>
-<span id="cb5-9"><a href="#cb5-9"></a>  <span class="dt">encoding =</span> cwbtools<span class="op">::</span><span class="kw">registry_file_parse</span>(<span class="dt">corpus =</span> <span class="st">&quot;GERMAPARL&quot;</span>)[[<span class="st">&quot;properties&quot;</span>]][[<span class="st">&quot;charset&quot;</span>]],</span>
-<span id="cb5-10"><a href="#cb5-10"></a>  <span class="dt">delete =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb5-11"><a href="#cb5-11"></a>  <span class="dt">verbose =</span> <span class="ot">TRUE</span></span>
-<span id="cb5-12"><a href="#cb5-12"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1"></a><span class="kw">s_attribute_encode</span>(</span>
+<span id="cb10-2"><a href="#cb10-2"></a>  <span class="dt">values =</span> <span class="kw">as.character</span>(<span class="kw">seq.int</span>(<span class="dt">from =</span> 0L, <span class="dt">to =</span> <span class="kw">nrow</span>(region_matrix) <span class="op">-</span><span class="st"> </span>1L)),</span>
+<span id="cb10-3"><a href="#cb10-3"></a>  <span class="dt">data_dir =</span> <span class="kw">registry_file_parse</span>(<span class="dt">corpus =</span> <span class="st">&quot;GERMAPARLSAMPLE&quot;</span>)[[<span class="st">&quot;home&quot;</span>]],</span>
+<span id="cb10-4"><a href="#cb10-4"></a>  <span class="dt">s_attribute =</span> <span class="st">&quot;s&quot;</span>,</span>
+<span id="cb10-5"><a href="#cb10-5"></a>  <span class="dt">corpus =</span> <span class="st">&quot;GERMAPARLSAMPLE&quot;</span>,</span>
+<span id="cb10-6"><a href="#cb10-6"></a>  <span class="dt">region_matrix =</span> region_matrix,</span>
+<span id="cb10-7"><a href="#cb10-7"></a>  <span class="dt">method =</span> <span class="st">&quot;R&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8"></a>  <span class="dt">registry_dir =</span> <span class="kw">Sys.getenv</span>(<span class="st">&quot;CORPUS_REGISTRY&quot;</span>),</span>
+<span id="cb10-9"><a href="#cb10-9"></a>  <span class="dt">encoding =</span> <span class="kw">registry_file_parse</span>(<span class="dt">corpus =</span> <span class="st">&quot;GERMAPARLSAMPLE&quot;</span>)[[<span class="st">&quot;properties&quot;</span>]][[<span class="st">&quot;charset&quot;</span>]],</span>
+<span id="cb10-10"><a href="#cb10-10"></a>  <span class="dt">delete =</span> <span class="ot">TRUE</span>,</span>
+<span id="cb10-11"><a href="#cb10-11"></a>  <span class="dt">verbose =</span> <span class="ot">TRUE</span></span>
+<span id="cb10-12"><a href="#cb10-12"></a>)</span></code></pre></div>
+<pre><code>## ... adding s-attribute &#39;s&#39; to registry</code></pre>
+<pre><code>## Corpus to delete (ID): GERMAPARLSAMPLE
+## Corpus name: GermaParlSample: Sample subset of the GermaParl corpus of plenary protocols of the German Bundestag
+## Number of loads before reset: 5
+## Number of loads resetted: 1</code></pre>
 </div>
 <div id="checking-the-result" class="section level2">
 <h2>Checking the result</h2>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>k &lt;-<span class="st"> </span><span class="kw">kwic</span>(<span class="st">&quot;GERMAPARL&quot;</span>, <span class="dt">query =</span> <span class="st">&quot;Integration&quot;</span>, <span class="dt">left =</span> <span class="dv">30</span>, <span class="dt">right =</span> <span class="dv">30</span>, <span class="dt">boundary =</span> <span class="st">&quot;s&quot;</span>)</span></code></pre></div>
+<p>To see whether everything has worked, we get the left and right boundaries of the sentence with corpus position 60.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>left &lt;-<span class="st"> </span><span class="kw">cl_cpos2lbound</span>(<span class="st">&quot;GERMAPARLSAMPLE&quot;</span>, <span class="dt">cpos =</span> <span class="dv">60</span>, <span class="dt">s_attribute =</span> <span class="st">&quot;s&quot;</span>)</span>
+<span id="cb13-2"><a href="#cb13-2"></a>right &lt;-<span class="st"> </span><span class="kw">cl_cpos2rbound</span>(<span class="st">&quot;GERMAPARLSAMPLE&quot;</span>, <span class="dt">cpos =</span> <span class="dv">60</span>, <span class="dt">s_attribute =</span> <span class="st">&quot;s&quot;</span>)</span>
+<span id="cb13-3"><a href="#cb13-3"></a>ids &lt;-<span class="st"> </span><span class="kw">cl_cpos2id</span>(<span class="st">&quot;GERMAPARLSAMPLE&quot;</span>, <span class="dt">cpos =</span> left<span class="op">:</span>right, <span class="dt">p_attribute =</span> <span class="st">&quot;word&quot;</span>)</span>
+<span id="cb13-4"><a href="#cb13-4"></a><span class="kw">cl_id2str</span>(<span class="st">&quot;GERMAPARLSAMPLE&quot;</span>, <span class="dt">p_attribute =</span> <span class="st">&quot;word&quot;</span>, <span class="dt">id =</span> ids)</span></code></pre></div>
+<pre><code>##  [1] &quot;Ich&quot;      &quot;bin&quot;      &quot;am&quot;       &quot;Sonntag&quot;  &quot;,&quot;        &quot;dem&quot;     
+##  [7] &quot;1.&quot;       &quot;Dezember&quot; &quot;1935&quot;     &quot;,&quot;        &quot;geboren&quot;  &quot;.&quot;</code></pre>
+</div>
+<div id="cleaning-up" class="section level2">
+<h2>Cleaning up</h2>
+<p>As a matter of housekeeping, we remove the temporary data directory.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">unlink</span>(corpus_dir_tmp)</span></code></pre></div>
 </div>
 <div id="next-steps" class="section level2">
 <h2>Next Steps</h2>

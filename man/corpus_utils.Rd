@@ -16,6 +16,7 @@ corpus_install(
   repo = "https://PolMine.github.io/drat/",
   tarball = NULL,
   doi = NULL,
+  checksum = NULL,
   lib = .libPaths()[1],
   registry_dir = cwbtools::cwb_registry_dir(),
   corpus_dir = cwb_corpus_dir(registry_dir),
@@ -35,7 +36,12 @@ corpus_rename(
   verbose = TRUE
 )
 
-corpus_remove(corpus, registry_dir = cwb_registry_dir(), ask = interactive())
+corpus_remove(
+  corpus,
+  registry_dir = cwb_registry_dir(),
+  ask = interactive(),
+  verbose = TRUE
+)
 
 corpus_as_tarball(corpus, registry_dir, data_dir, tarfile, verbose = TRUE)
 
@@ -47,6 +53,7 @@ corpus_copy(
     "registry", fsep = "/"),
   data_dir_new = file.path(normalizePath(tempdir(), winslash = "/"), "cwb",
     "indexed_corpora", tolower(corpus), fsep = "/"),
+  remove = FALSE,
   verbose = interactive(),
   progress = TRUE
 )
@@ -71,10 +78,17 @@ corpus_testload(
 
 \item{repo}{URL of the repository.}
 
-\item{tarball}{The URL or local path to a tarball with a CWB indexed corpus.}
+\item{tarball}{URL,  S3-URI or local filename of a tarball with a CWB indexed
+corpus. If \code{NULL} (default) and argument \code{doi} is stated, the
+whereabouts of a corpus tarball will be derived from DOI.}
 
 \item{doi}{The DOI (Digital Object Identifier) of a corpus deposited at
 Zenodo (e.g. "10.5281/zenodo.3748858".)}
+
+\item{checksum}{A length-one \code{character} vector with a MD5 checksum to
+check for the integrity of a downloaded tarball. If the tarball is
+downloaded from Zenodo by stating a DOI (argument \code{doi}), the checksum
+included in the metadata for the record is used for the check.}
 
 \item{lib}{Directory for R packages, defaults to \code{.libPaths()[1]}.}
 
@@ -110,6 +124,9 @@ or \code{download.file}, if \code{tarball} is specified.}
 
 \item{data_dir_new}{Target directory for corpus files.}
 
+\item{remove}{A \code{logical} value, whether to remove orginal files after
+having created the copy.}
+
 \item{progress}{Logical, whether to show a progress bar.}
 
 \item{skip}{A character vector with s_attributes to skip.}
@@ -117,7 +134,7 @@ or \code{download.file}, if \code{tarball} is specified.}
 \item{to}{Character string describing the target encoding of the corpus.}
 }
 \value{
-Logical value \code{TRUE} if installation has been successful.
+Logical value \code{TRUE} if installation has been successful, or \code{FALSE} if not.
 }
 \description{
 Utility functions to assist the installation and management of indexed CWB

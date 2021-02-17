@@ -63,7 +63,9 @@
 #' @param new Name of the (new) corpus.
 #' @param pkg Name of the data package.
 #' @param repo URL of the repository.
-#' @param tarball The URL or local path to a tarball with a CWB indexed corpus.
+#' @param tarball URL,  S3-URI or local filename of a tarball with a CWB indexed
+#'   corpus. If \code{NULL} (default) and argument \code{doi} is stated, the
+#'   whereabouts of a corpus tarball will be derived from DOI.
 #' @param doi The DOI (Digital Object Identifier) of a corpus deposited at
 #'   Zenodo (e.g. "10.5281/zenodo.3748858".)
 #' @param lib Directory for R packages, defaults to \code{.libPaths()[1]}.
@@ -73,6 +75,10 @@
 #' @param registry_dir Directory of registry.
 #' @param corpus A CWB corpus.
 #' @param tarfile Filename of tarball.
+#' @param checksum A length-one \code{character} vector with a MD5 checksum to
+#'   check for the integrity of a downloaded tarball. If the tarball is
+#'   downloaded from Zenodo by stating a DOI (argument \code{doi}), the checksum
+#'   included in the metadata for the record is used for the check.
 #' @param corpus_dir The directory that contains the data directories of indexed
 #'   corpora.
 #' @param ... Further parameters that will be passed into
@@ -81,24 +87,25 @@
 #' @param user A user name that can be specified to download a corpus from a password protected site.
 #' @param password A password that can be specified to download a corpus from a password protected site. 
 #' @name corpus_install
-#' @return Logical value \code{TRUE} if installation has been successful.
+#' @return Logical value \code{TRUE} if installation has been successful, or \code{FALSE} if not.
 #' @seealso For managing registry files, see \code{\link{registry_file_parse}}
 #' for switching to a packaged corpus. 
 #' @importFrom utils available.packages contrib.url install.packages
 #' @importFrom utils installed.packages tar
 #' @importFrom curl curl_download new_handle handle_setopt
-#' @importFrom RCurl url.exists getURL
+#' @importFrom httr http_error
 #' @importFrom jsonlite fromJSON
 #' @importFrom utils menu
+#' @importFrom tools md5sum
 #' @importFrom stringi stri_enc_mark
 #' @importFrom tools file_path_sans_ext
 #' @importFrom zen4R ZenodoManager
 #' @importFrom cli cli_rule cli_alert_success cli_process_start cli_process_done
-#'   cli_alert_info col_cyan cli_alert_danger cli_text col_blue col_red cli_alert_warning
+#'   cli_alert_info col_cyan cli_alert_danger cli_text col_blue col_red cli_alert_warning cli_process_failed
 #' @importFrom RcppCWB cqp_is_initialized cqp_get_registry cqp_reset_registry
 #' @rdname corpus_utils
 #' @export corpus_install
-corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/", tarball = NULL, doi = NULL, lib = .libPaths()[1], registry_dir = cwbtools::cwb_registry_dir(), corpus_dir = cwb_corpus_dir(registry_dir), ask = interactive(), verbose = TRUE, user = NULL, password = NULL, ...){
+corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/", tarball = NULL, doi = NULL, checksum = NULL, lib = .libPaths()[1], registry_dir = cwbtools::cwb_registry_dir(), corpus_dir = cwb_corpus_dir(registry_dir), ask = interactive(), verbose = TRUE, user = NULL, password = NULL, ...){
   
   modify_renviron <- FALSE
   
@@ -131,18 +138,29 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
       if (is.null(doi)) stop("If argument 'tarball' is NULL, either argument 'pkg' or argument 'doi' are required.")
       if (grepl("https://doi.org/", doi)) doi <- gsub("https://doi.org/", "", doi)
       if (isFALSE(grepl("^.*?10\\.5281/zenodo\\.\\d+$", doi))){
-        stop("Argument 'doi' is expected to offer a DOI (Digital Object Identifier) that refers to data",
-             "hosted with zenodo, i.e. starting with 10.5281/zenodo.")
+        warning("argument 'doi' is expected to offer a DOI (Digital Object Identifier) that refers to data",
+             "hosted with Zenodo, i.e. starting with 10.5281/zenodo")
+        return(invisible(FALSE))
       }
       
       if (verbose) cli_rule("Resolve DOI")
-      if (verbose) cli_process_start("get metadata for the Zenodo record referred to by DOI")
-      zenodo_record <- ZenodoManager$new()$getRecordByDOI(doi = doi)
-      if (verbose) cli_process_done()
-      
+      if (verbose) cli_process_start("get Zenodo record referred to by DOI")
+      tryCatch(
+        zenodo_record <- ZenodoManager$new()$getRecordByDOI(doi = doi),
+        error = function(e) if (verbose) cli_process_failed() else cli_alert_danger(sprintf("'no Zenodo record found for DOI '%s'", doi))
+      )
+      if (!exists("zenodo_record")){
+        return(invisible(FALSE)) # unlikely scenario that can only result from error detected by tryCatch()
+      } else if (is.null(zenodo_record)){
+        if (verbose) cli_alert_danger(sprintf("no Zenodo record found for DOI '%s'", doi))
+        return(invisible(FALSE))
+      } else {
+        if (verbose) cli_process_done()
+      }
+
       zenodo_files <- sapply(zenodo_record[["files"]], function(x) x[["links"]][["download"]])
       tarball <- grep("^.*?_(v|)\\d+\\.\\d+\\.\\d+\\.tar\\.gz$", zenodo_files, value = TRUE)
-      
+
       if (length(tarball) > 1L && isTRUE(ask)){
         userchoice <- utils::menu(
           choices = basename(tarball),
@@ -151,6 +169,7 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
         tarball <- tarball[userchoice]
       }
       if (verbose) cli_alert_info(sprintf("tarball to be downloaded: %s", col_blue(basename(tarball))))
+      zenodo_file_record <- zenodo_record[["files"]][[which(zenodo_files == tarball)]]
     }
   }
   
@@ -158,7 +177,7 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
   
   cwb_dirs <- cwb_directories(registry_dir = registry_dir, corpus_dir = corpus_dir)
   if (any(is.null(cwb_dirs))){
-    cwb_dirs <- create_cwb_directories() # will trigger interactive dialogue
+    cwb_dirs <- create_cwb_directories(ask = ask)
     modify_renviron <- TRUE
   }
 
@@ -202,22 +221,41 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
           )
         }
       }
-      corpus_remove(corpus = toupper(corpus), registry_dir = cwb_dirs[["registry_dir"]], ask = ask)
+      purged <- corpus_remove(corpus = toupper(corpus), registry_dir = cwb_dirs[["registry_dir"]], ask = ask)
+      if (isFALSE(purged)) return(invisible(FALSE))
     }
     
     # Now download corpus -------------------
-    cat_rule("Download corpus tarball")
-    if (verbose) cli_alert_info(sprintf("download corpus tarball {col_cyan('%s')}", basename(tarball)))
     cwbtools_tmpdir <- file.path(normalizePath(tempdir(), winslash = "/"), "cwbtools_tmpdir", fsep = "/")
     if (file.exists(cwbtools_tmpdir)) unlink(cwbtools_tmpdir, recursive = TRUE)
     dir.create(cwbtools_tmpdir)
-    corpus_tarball <- file.path(cwbtools_tmpdir, basename(tarball), fsep = "/")
     if (grepl("^http", tarball)){
+      if (verbose) cat_rule("Download corpus tarball")
+      if (verbose) cli_alert_info(sprintf("download corpus tarball {col_cyan('%s')}", basename(tarball)))
+      
+      corpus_tarball <- file.path(cwbtools_tmpdir, basename(tarball), fsep = "/")
+      
       if (is.null(user)){
-        if (!RCurl::url.exists(tarball)) stop("tarball is not available")
+        if (http_error(tarball)) stop("tarball is not available")
         if (.Platform$OS.type == "windows"){
-          # use download.file because it is able to cope with murky user names / path names
-          download.file(url = tarball, destfile = corpus_tarball, quiet = !verbose)
+          # Use download.file() because it is able to cope with murky user names / path names
+          # Progress messages are better of download.file(). However curl_download() is more
+          # robust, so we use it when download.file() has failed.
+          trystatus <- try(
+            download.file(
+              url = tarball,
+              destfile = corpus_tarball,
+              quiet = !verbose,
+              cacheOK = FALSE,
+              method = if (isTRUE(capabilities("libcurl"))) "libcurl" else getOption("download.file.method")
+            )
+          )
+          if (is(trystatus)[[1]] == "try-error"){
+            retry <- TRUE
+          } else {
+            retry <- if (trystatus == 1L) TRUE else FALSE
+          }
+          if (isTRUE(retry)) curl::curl_download(url = tarball, destfile = corpus_tarball, quiet = !verbose)
         } else {
           curl::curl_download(url = tarball, destfile = corpus_tarball, quiet = !verbose)
         }
@@ -241,13 +279,67 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
           )
         }
       }
+      if (verbose) cli_alert_success(sprintf("download corpus tarball {col_cyan('%s')} ... done", basename(tarball)))
+      if (exists("zenodo_file_record")){
+        if (!is.null(checksum)){
+          if (verbose) cli_alert_warning("argument checksum is not NULL but md5 checksum can be derived from Zenodo record - using checksum issued by Zenodo")
+        }
+        checksum <- zenodo_file_record[["checksum"]]
+      }
+      if (isFALSE(is.null(checksum))){
+        if (verbose){
+          cli_process_start(sprintf("check md5 checksum for tarball %s (expected: %s)", basename(tarball), checksum))
+        }
+        corpus_tarball_checksum <- tools::md5sum(corpus_tarball)
+        if (corpus_tarball_checksum == checksum){
+          if (verbose) cli_process_done()
+        } else {
+          if (verbose) cli_process_failed()
+          cli_alert_danger(
+            sprintf(
+              "md5 checksum of downloaded tarball '%s' is '%s', but Zenodo archive md5 checksum is '%s'",
+              basename(corpus_tarball), corpus_tarball_checksum, checksum
+            )
+          )
+          return(invisible(FALSE))
+        }
+      } else if (FALSE){
+        if (verbose) cli_alert_warning("no md5 checksum provided or available to check downloaded tarball - note that checking the integrity of downloaded data is good practice")
+      }
+    } else if (grepl("^[sS]3:", tarball)){
+      if (!requireNamespace("aws.s3", quietly = TRUE)){
+        stop(
+          "To download a corpus tarball from S3, package 'aws.s3' is required. ",
+          "Package 'aws.s3' is not installed. ",
+          "Install package 'aws.s3' by calling install.packages('aws.s3') and retry."
+        )
+      }
+      if (verbose) cat_rule("Download corpus tarball from S3")
+      if (verbose) cli_alert_info(sprintf("download corpus tarball {col_cyan('%s')}", basename(tarball)))
+      corpus_tarball <- file.path(cwbtools_tmpdir, basename(tarball), fsep = "/")
+      
+      bucketname <- aws.s3::get_bucketname(tarball)
+      location <- aws.s3::get_location(bucketname)
+      obj <- aws.s3::get_objectkey(tarball)
+      
+      if (isFALSE(aws.s3::object_exists(obj, bucket = bucketname, region = location))){
+        warning("S3 object does not exist - aborting")
+        return(invisible(FALSE))
+      }
+
+      aws.s3::save_object(
+        object = obj,
+        file = corpus_tarball, # temporary local destfile
+        bucket = bucketname,
+        region = location,
+        show_progress = TRUE
+      )
     } else {
-      # If tqrball is not a URL, it is assumed to be present on the local machine
+      # If tarball is not a URL, it is assumed to be present on the local machine
       if (!file.exists(tarball)) stop(sprintf("tarball '%s' not found locally", tarball))
-      file.copy(from = tarball, to = corpus_tarball)
+      corpus_tarball <- tarball
     }
-    if (verbose) cli_alert_success(sprintf("download corpus tarball {col_cyan('%s')} ... done", basename(tarball)))
-    
+
     if (.Platform$OS.type == "windows"){
       if (stri_enc_mark(corpus_tarball) != "ASCII") corpus_tarball <- utils::shortPathName(corpus_tarball)
       if (stri_enc_mark(cwbtools_tmpdir) != "ASCII") cwbtools_tmpdir <- utils::shortPathName(cwbtools_tmpdir)
@@ -257,9 +349,12 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
     untar(tarfile = corpus_tarball, exdir = cwbtools_tmpdir)
     if (verbose) cli_process_done()
 
-    if (verbose) cli_process_start("remove tarball")
-    unlink(corpus_tarball)
-    if (verbose) cli_process_done()
+    if (tarball != corpus_tarball){
+      # Remove corpus_tarball only if it has been downloaded
+      if (verbose) cli_process_start("remove tarball")
+      unlink(corpus_tarball)
+      if (verbose) cli_process_done()
+    }
     
     tmp_registry_dir <- file.path(normalizePath(cwbtools_tmpdir, winslash = "/"), "registry", fsep = "/")
     tmp_data_dir <- file.path(normalizePath(cwbtools_tmpdir, winslash = "/"), "indexed_corpora", fsep = "/")
@@ -300,7 +395,9 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
           registry_dir = tmp_registry_dir, 
           data_dir = tmp_home_dir, # the temporary place
           registry_dir_new = cwb_dirs[["registry_dir"]], 
-          data_dir_new = data_dir_target # final location
+          data_dir_new = data_dir_target, # final location
+          verbose = verbose,
+          remove = TRUE
         )
       }
 
@@ -441,7 +538,7 @@ corpus_rename <- function(old, new, registry_dir = Sys.getenv("CORPUS_REGISTRY")
 #' @rdname corpus_utils
 #' @importFrom cli cli_alert_success
 #' @export corpus_remove
-corpus_remove <- function(corpus, registry_dir = cwb_registry_dir(), ask = interactive()){
+corpus_remove <- function(corpus, registry_dir = cwb_registry_dir(), ask = interactive(), verbose = TRUE){
   
   stopifnot(tolower(corpus) %in% list.files(registry_dir)) # check that corpus exists
   
@@ -452,12 +549,15 @@ corpus_remove <- function(corpus, registry_dir = cwb_registry_dir(), ask = inter
       choices = c("Yes", "No"),
       title = sprintf("Are you sure you want to delete registry and data files for corpus '%s'?", cli::col_red(corpus))
     )
-    if (userinput != 1L) stop("Aborting")
+    if (userinput != 1L){
+      cli_alert_warning("User abort")
+      return(invisible(FALSE))
+    }
   }
   for (x in list.files(data_directory, full.names = TRUE)) file.remove(x)
   file.remove(data_directory)
   file.remove(file.path(registry_dir, tolower(corpus), fsep = "/"))
-  cli_alert_success("corpus has been removed (registry and data files)")
+  if (verbose) cli_alert_success("corpus has been removed (registry and data files)")
   invisible(TRUE)
 }
 
@@ -518,6 +618,8 @@ corpus_as_tarball <- function(corpus, registry_dir, data_dir, tarfile, verbose =
 #' @param data_dir The data directory where the files of the CWB corpus live.
 #' @param registry_dir_new Target directory with for (new) registry files.
 #' @param data_dir_new Target directory for corpus files.
+#' @param remove A \code{logical} value, whether to remove orginal files after
+#'   having created the copy.
 #' @param progress Logical, whether to show a progress bar.
 #' @details \code{corpus_copy} will create a copy of a corpus (useful for
 #'   experimental modifications, for instance).
@@ -546,6 +648,7 @@ corpus_copy <- function(
   corpus, registry_dir, data_dir = NULL,
   registry_dir_new = file.path(normalizePath(tempdir(), winslash = "/"), "cwb", "registry", fsep = "/"),
   data_dir_new = file.path(normalizePath(tempdir(), winslash = "/"), "cwb", "indexed_corpora", tolower(corpus), fsep = "/"),
+  remove = FALSE,
   verbose = interactive(),
   progress = TRUE
   ){
@@ -565,8 +668,9 @@ corpus_copy <- function(
     lapply(
       list.files(data_dir, full.names = TRUE),
       function(f){
-        spinner$spin()
         file.copy(from = f, to = file.path(data_dir_new, basename(f), fsep = "/"))
+        spinner$spin()
+        if (remove) file.remove(f)
       }
     )
     spinner$finish()
@@ -599,7 +703,7 @@ corpus_copy <- function(
       }
       rf[["info"]] <- info_file_guessed[1]
     } else {
-      cli_alert_danger("no info file found")
+      if (verbose) cli_alert_warning("no info file found")
     }
   }
   

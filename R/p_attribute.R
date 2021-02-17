@@ -42,19 +42,20 @@
 #' 
 #' tokens <- readLines(system.file(package = "RcppCWB", "extdata", "examples", "reuters.txt"))
 #' 
-#' # create new (and empty) directory structure
+#' # Create new (and empty) directory structure
 #' 
 #' tmpdir <- normalizePath(tempdir(), winslash = "/")
-#' if (.Platform$OS.type == "windows") tmpdir <- normalizePath(tmpdir, winslash = "/")
 #' registry_tmp <- file.path(tmpdir, "registry", fsep = "/")
-#' data_dir_tmp <- file.path(tmpdir, "data_dir", fsep = "/")
+#' data_dir_tmp <- file.path(tmpdir, "data_dir", "reuters", fsep = "/")
 #' if (file.exists(file.path(data_dir_tmp, "word.corpus"))){
 #'   file.remove(file.path(data_dir_tmp, "word.corpus"))
 #' }
 #' if (dir.exists(registry_tmp)) unlink(registry_tmp, recursive = TRUE)
 #' if (dir.exists(data_dir_tmp)) unlink(data_dir_tmp, recursive = TRUE)
-#' dir.create (registry_tmp)
-#' dir.create(data_dir_tmp)
+#' dir.create(registry_tmp)
+#' dir.create(data_dir_tmp, recursive = TRUE)
+#' 
+#' # Now encode token stream
 #' 
 #' p_attribute_encode(
 #'   corpus = "reuters",
@@ -65,14 +66,20 @@
 #'   encoding = "utf8"
 #'   )
 #' 
+#' # Create minimal registry file
+#' 
 #' regdata <- registry_data(
 #'   id = "REUTERS", name = "Reuters Sample Corpus", home = data_dir_tmp,
 #'   properties = c(encoding = "utf-8", language = "en"), p_attributes = "word"
 #' )
+#' 
 #' regfile <- registry_file_write(
 #'   data = regdata, corpus = "REUTERS",
 #'   registry_dir = registry_tmp, data_dir = data_dir_tmp,
 #' )
+#' 
+#' # Reload corpus and run query as a test
+#' 
 #' if (cqp_is_initialized()) cqp_reset_registry(registry_tmp) else cqp_initialize(registry_tmp)
 #' 
 #' cqp_query(corpus = "REUTERS", query = '[]{3} "oil" []{3};')
@@ -92,7 +99,7 @@
 p_attribute_encode <- function(
   token_stream, p_attribute = "word", registry_dir, corpus, data_dir, method = c("R", "CWB"),
   verbose = TRUE, encoding = get_encoding(token_stream),
-  compress = NULL
+  compress = FALSE
 ){
   if (!encoding %in% c("ascii", paste0("latin", 1:9), "utf8")){
     stop("encoding required to be ascii, latin1 to latin9, utf8 by cwb-encode")
@@ -119,7 +126,19 @@ p_attribute_encode <- function(
     
     ids <- as.integer(tokenstream_factor) - 1L
     if (verbose) message("... writing file: ", basename(corpus_file))
-    writeBin(object = ids, size = 4L, endian = "big", con = corpus_file)
+    if (length(ids) * 4 < ((2^31) - 1)){
+      writeBin(object = ids, size = 4L, endian = "big", con = corpus_file)
+    } else {
+      corpus_file_con <- file(corpus_file, open = "ab")
+      max_id <- trunc((2^31 - 1) / 4) # trunc() necessary to avoid floating number issue
+      if (length(ids) > 2 * max_id){
+        stop("Corpus size exceeds current limitation. Not difficut to implement, but remaining business.")
+      }
+      writeBin(object = ids[1L:max_id], size = 4L, endian = "big", con = corpus_file_con)
+      writeBin(object = ids[(max_id + 1L):length(ids)], size = 4L, endian = "big", con = corpus_file_con)
+      close(corpus_file_con)
+    }
+    
     rm(ids); gc()
     
     lexicon <- levels(tokenstream_factor)
@@ -194,7 +213,7 @@ p_attribute_encode <- function(
         args = c(
           sprintf("-d %s", normalizePath(data_dir)),
           sprintf("-f %s", normalizePath(vrt_tmp_file)),
-          sprintf("-R %s", normalizePath(registry_file)),
+          sprintf("-R %s", normalizePath(registry_file, mustWork = FALSE)),
           sprintf("-c %s", encoding), "-v")
       )
     } else {
@@ -213,7 +232,7 @@ p_attribute_encode <- function(
         file.path(cwb_get_bindir(), executable, fsep = "/"),
         "-d", normalizePath(data_dir),
         "-f", normalizePath(vrt_tmp_file),
-        "-R", normalizePath(registry_file),
+        "-R", normalizePath(registry_file, mustWork = FALSE),
         "-p", "-",
         "-P", p_attribute,
         "-c", encoding
@@ -284,6 +303,16 @@ p_attribute_encode <- function(
       )
     }
   } else if (method == "R"){
+    
+    # Check whether corpus has been loaded and delete corpus if necessary
+    # cwb_makeall will crash if corpus is loaded
+    
+    corpus_size <- RcppCWB::cl_attribute_size(
+      corpus = corpus, attribute = "word", attribute_type = "p",
+      registry = registry_dir
+    )
+    if (corpus_size > 0L) cl_delete_corpus(corpus = corpus, registry = registry_dir)
+
     cwb_makeall(corpus = corpus, p_attribute = p_attribute, registry = registry_dir)
     if (compress){
       cwb_huffcode(corpus = corpus, p_attribute = p_attribute, registry = registry_dir)
@@ -302,8 +331,6 @@ p_attribute_encode <- function(
       }
     }
   }
-  
-  
 }
 
 
