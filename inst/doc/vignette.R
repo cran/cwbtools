@@ -12,6 +12,9 @@ if (!file.exists(registry_tmp)){
 }
 if (!file.exists(data_dir_tmp)) dir.create(data_dir_tmp)
 
+regdir_envvar <- Sys.getenv("CORPUS_REGISTRY")
+Sys.setenv(CORPUS_REGISTRY = registry_tmp)
+
 ## ----load_pkgs----------------------------------------------------------------
 library(cwbtools)
 library(data.table)
@@ -63,13 +66,13 @@ UNGA$encode(
   compress = FALSE
   )
 
-## ----check_use, eval = TRUE---------------------------------------------------
-library(RcppCWB)
-id_peace <- cl_str2id(
+## -----------------------------------------------------------------------------
+RcppCWB::cqp_initialize()
+id_peace <- RcppCWB::cl_str2id(
   corpus = "UNGA", p_attribute = "word",
   str = "peace", registry = registry_tmp
 )
-cpos_peace <- cl_id2cpos(
+cpos_peace <- RcppCWB::cl_id2cpos(
   corpus = "UNGA", p_attribute = "word",
   id = id_peace, registry = registry_tmp
 )
@@ -78,11 +81,11 @@ tab <- data.frame(
   i = unlist(lapply(1:length(cpos_peace), function(x) rep(x, times = 11))),
   cpos = unlist(lapply(cpos_peace, function(x) (x - 5):(x + 5)))
   )
-tab[["id"]] <- cl_cpos2id(
+tab[["id"]] <- RcppCWB::cl_cpos2id(
   corpus = "UNGA", p_attribute = "word",
   cpos = tab[["cpos"]], registry = registry_tmp
 )
-tab[["str"]] <- cl_id2str(
+tab[["str"]] <- RcppCWB::cl_id2str(
   corpus = "UNGA", p_attribute = "word",
   id = tab[["id"]], registry = registry_tmp
 )
@@ -130,14 +133,14 @@ Austen$encode(
 )
 
 ## -----------------------------------------------------------------------------
-cqp_reset_registry(registry = registry_tmp)
+RcppCWB::cqp_reset_registry(registry = registry_tmp)
 
 ## -----------------------------------------------------------------------------
 corpus <- "AUSTEN"
 token <- "pride"
 p_attr <- "word"
 id <- RcppCWB::cl_str2id(corpus = corpus, p_attribute = p_attr, str = token, registry = registry_tmp)
-cpos <- cl_id2cpos(corpus = corpus, p_attribute = p_attr, id = id, registry = registry_tmp)
+cpos <- RcppCWB::cl_id2cpos(corpus = corpus, p_attribute = p_attr, id = id, registry = registry_tmp)
 count <- length(cpos)
 count
 
@@ -188,15 +191,17 @@ Reuters$encode(
 )
 
 ## ---- message = FALSE, results = FALSE----------------------------------------
-cqp_reset_registry(registry = registry_tmp)
+RcppCWB::cqp_reset_registry(registry = registry_tmp)
 
 ## -----------------------------------------------------------------------------
-id <- cl_str2id(corpus = "REUTERS", p_attribute = "word", str = "oil", registry = registry_tmp)
-cpos <- cl_id2cpos(corpus = "REUTERS", p_attribute = "word", id = id, registry = registry_tmp)
+id <- RcppCWB::cl_str2id(corpus = "REUTERS", p_attribute = "word", str = "oil", registry = registry_tmp)
+cpos <- RcppCWB::cl_id2cpos(corpus = "REUTERS", p_attribute = "word", id = id, registry = registry_tmp)
 count <- length(cpos)
 count
 
 ## -----------------------------------------------------------------------------
 unlink(registry_tmp, recursive = TRUE)
 unlink(data_dir_tmp, recursive = TRUE)
+
+Sys.setenv(CORPUS_REGISTRY = regdir_envvar)
 

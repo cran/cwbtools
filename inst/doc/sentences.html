@@ -12,7 +12,7 @@
 
 <meta name="author" content="Andreas Blätte (andreas.blaette@uni-due.de)" />
 
-<meta name="date" content="2021-02-17" />
+<meta name="date" content="2021-02-20" />
 
 <title>How to add a sentence annotation to an indexed corpus</title>
 
@@ -367,7 +367,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">How to add a sentence annotation to an indexed corpus</h1>
 <h4 class="author">Andreas Blätte (<a href="mailto:andreas.blaette@uni-due.de" class="email">andreas.blaette@uni-due.de</a>)</h4>
-<h4 class="date">2021-02-17</h4>
+<h4 class="date">2021-02-20</h4>
 
 
 
@@ -381,15 +381,20 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw">library</span>(cwbtools)</span>
 <span id="cb1-2"><a href="#cb1-2"></a><span class="kw">library</span>(RcppCWB)</span></code></pre></div>
 <p>For the purposes of this vigneette, ee will work with a temporary corpy of the corpus we wish to augment, so we create a temporary corpus directory.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>corpus_dir_tmp &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">tempdir</span>(), <span class="st">&quot;corpus_dir_tmp&quot;</span>)</span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="kw">dir.create</span>(<span class="dt">path =</span> corpus_dir_tmp)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a>registry_dir_tmp &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">tempdir</span>(), <span class="st">&quot;registry_dir_tmp&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2"></a>corpus_dir_tmp &lt;-<span class="st"> </span><span class="kw">file.path</span>(<span class="kw">tempdir</span>(), <span class="st">&quot;corpus_dir_tmp&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3"></a></span>
+<span id="cb2-4"><a href="#cb2-4"></a><span class="kw">dir.create</span>(<span class="dt">path =</span> registry_dir_tmp)</span>
+<span id="cb2-5"><a href="#cb2-5"></a><span class="kw">dir.create</span>(<span class="dt">path =</span> corpus_dir_tmp)</span>
+<span id="cb2-6"><a href="#cb2-6"></a></span>
+<span id="cb2-7"><a href="#cb2-7"></a>regdir_envvar &lt;-<span class="st"> </span><span class="kw">Sys.getenv</span>(<span class="st">&quot;CORPUS_REGISTRY&quot;</span>)</span>
+<span id="cb2-8"><a href="#cb2-8"></a><span class="kw">Sys.setenv</span>(<span class="dt">CORPUS_REGISTRY =</span> registry_dir_tmp)</span></code></pre></div>
 <p>The GermaParlSample corpus can be downloaded from <a href="https://doi.org/10.5281/zenodo.3823245">Zenodo</a> as follows.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a>cwbtools<span class="op">::</span><span class="kw">corpus_install</span>(</span>
 <span id="cb3-2"><a href="#cb3-2"></a>  <span class="dt">doi =</span> <span class="st">&quot;10.5281/zenodo.3823245&quot;</span>,</span>
-<span id="cb3-3"><a href="#cb3-3"></a>  <span class="dt">registry_dir =</span> <span class="kw">Sys.getenv</span>(<span class="st">&quot;CORPUS_REGISTRY&quot;</span>),</span>
-<span id="cb3-4"><a href="#cb3-4"></a>  <span class="dt">corpus_dir =</span> corpus_dir_tmp,</span>
-<span id="cb3-5"><a href="#cb3-5"></a>  <span class="dt">verbose =</span> <span class="ot">FALSE</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a>)</span></code></pre></div>
+<span id="cb3-3"><a href="#cb3-3"></a>  <span class="dt">registry_dir =</span> registry_dir_tmp, <span class="dt">corpus_dir =</span> corpus_dir_tmp,</span>
+<span id="cb3-4"><a href="#cb3-4"></a>  <span class="dt">verbose =</span> <span class="ot">FALSE</span></span>
+<span id="cb3-5"><a href="#cb3-5"></a>)</span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="kw">list.files</span>(<span class="kw">file.path</span>(corpus_dir_tmp, <span class="st">&quot;germaparlsample&quot;</span>))</span></code></pre></div>
 <pre><code>##  [1] &quot;date.avs&quot;         &quot;date.avx&quot;         &quot;date.rng&quot;         &quot;interjection.avs&quot;
 ##  [5] &quot;interjection.avx&quot; &quot;interjection.rng&quot; &quot;party.avs&quot;        &quot;party.avx&quot;       
@@ -456,8 +461,11 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 </div>
 <div id="cleaning-up" class="section level2">
 <h2>Cleaning up</h2>
-<p>As a matter of housekeeping, we remove the temporary data directory.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">unlink</span>(corpus_dir_tmp)</span></code></pre></div>
+<p>As a matter of housekeeping, we remove temporary directories and restore value of environment variable CORPUS_REGISTRY.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">unlink</span>(corpus_dir_tmp)</span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="kw">unlink</span>(registry_dir_tmp)</span>
+<span id="cb15-3"><a href="#cb15-3"></a></span>
+<span id="cb15-4"><a href="#cb15-4"></a><span class="kw">Sys.setenv</span>(<span class="dt">CORPUS_REGISTRY =</span> regdir_envvar)</span></code></pre></div>
 </div>
 <div id="next-steps" class="section level2">
 <h2>Next Steps</h2>

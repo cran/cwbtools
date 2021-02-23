@@ -1,8 +1,8 @@
 Package: cwbtools
 Type: Package
 Title: Tools to Create, Modify and Manage 'CWB' Corpora
-Version: 0.3.2
-Date: 2021-02-17
+Version: 0.3.3
+Date: 2021-02-20
 Authors@R: c(person("Andreas", "Blaette", role = c("aut", "cre"), email = "andreas.blaette@uni-due.de"),
   person("Christoph", "Leonhardt", role = "ctb", email = "christoph.leonhardt@uni-due.de")
   )
@@ -22,8 +22,8 @@ Description: The 'Corpus Workbench' ('CWB', <http://cwb.sourceforge.net/>) offer
 Imports: data.table, R6, xml2, stringi, curl, RcppCWB (>= 0.2.8),
         pbapply, methods, tools, cli, jsonlite, httr, rstudioapi, zen4R
 Suggests: tm (>= 0.7.3), knitr, tokenizers (>= 0.2.1), tidytext,
-        SnowballC, janeaustenr, devtools, NLP, testthat, usethis,
-        rmarkdown, openNLP, aws.s3
+        SnowballC, janeaustenr, NLP, testthat, rmarkdown, openNLP,
+        aws.s3
 VignetteBuilder: knitr
 LazyData: yes
 License: GPL-3
@@ -36,9 +36,9 @@ Collate: 'CorpusData.R' 'corpus.R' 'cwb.R' 'cwbtools.R' 'directories.R'
         's_attribute.R'
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2021-02-17 22:37:07 UTC; andreasblaette
+Packaged: 2021-02-20 01:34:11 UTC; andreasblaette
 Author: Andreas Blaette [aut, cre],
   Christoph Leonhardt [ctb]
 Maintainer: Andreas Blaette <andreas.blaette@uni-due.de>
 Repository: CRAN
-Date/Publication: 2021-02-17 23:00:02 UTC
+Date/Publication: 2021-02-23 12:20:37 UTC

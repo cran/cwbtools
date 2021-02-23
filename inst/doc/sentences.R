@@ -3,14 +3,19 @@ library(cwbtools)
 library(RcppCWB)
 
 ## ---- eval = TRUE-------------------------------------------------------------
+registry_dir_tmp <- file.path(tempdir(), "registry_dir_tmp")
 corpus_dir_tmp <- file.path(tempdir(), "corpus_dir_tmp")
+
+dir.create(path = registry_dir_tmp)
 dir.create(path = corpus_dir_tmp)
+
+regdir_envvar <- Sys.getenv("CORPUS_REGISTRY")
+Sys.setenv(CORPUS_REGISTRY = registry_dir_tmp)
 
 ## ---- eval = TRUE-------------------------------------------------------------
 cwbtools::corpus_install(
   doi = "10.5281/zenodo.3823245",
-  registry_dir = Sys.getenv("CORPUS_REGISTRY"),
-  corpus_dir = corpus_dir_tmp,
+  registry_dir = registry_dir_tmp, corpus_dir = corpus_dir_tmp,
   verbose = FALSE
 )
 
@@ -57,4 +62,7 @@ cl_id2str("GERMAPARLSAMPLE", p_attribute = "word", id = ids)
 
 ## ---- eval = TRUE-------------------------------------------------------------
 unlink(corpus_dir_tmp)
+unlink(registry_dir_tmp)
+
+Sys.setenv(CORPUS_REGISTRY = regdir_envvar)
 
