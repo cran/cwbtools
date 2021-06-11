@@ -9,6 +9,7 @@
 \alias{corpus_copy}
 \alias{corpus_recode}
 \alias{corpus_testload}
+\alias{corpus_get_version}
 \title{Install and manage corpora.}
 \usage{
 corpus_install(
@@ -18,8 +19,8 @@ corpus_install(
   doi = NULL,
   checksum = NULL,
   lib = .libPaths()[1],
-  registry_dir = cwbtools::cwb_registry_dir(),
-  corpus_dir = cwb_corpus_dir(registry_dir),
+  registry_dir,
+  corpus_dir,
   ask = interactive(),
   verbose = TRUE,
   user = NULL,
@@ -36,12 +37,7 @@ corpus_rename(
   verbose = TRUE
 )
 
-corpus_remove(
-  corpus,
-  registry_dir = cwb_registry_dir(),
-  ask = interactive(),
-  verbose = TRUE
-)
+corpus_remove(corpus, registry_dir, ask = interactive(), verbose = TRUE)
 
 corpus_as_tarball(corpus, registry_dir, data_dir, tarfile, verbose = TRUE)
 
@@ -72,6 +68,8 @@ corpus_testload(
   registry_dir = Sys.getenv("CORPUS_REGISTRY"),
   verbose = TRUE
 )
+
+corpus_get_version(corpus, registry_dir = Sys.getenv("CORPUS_REGISTRY"))
 }
 \arguments{
 \item{pkg}{Name of the data package.}
@@ -92,10 +90,11 @@ included in the metadata for the record is used for the check.}
 
 \item{lib}{Directory for R packages, defaults to \code{.libPaths()[1]}.}
 
-\item{registry_dir}{Directory of registry.}
+\item{registry_dir}{The corpus registry directory. If missing, the result of
+\code{cwb_registry_dir()}.}
 
 \item{corpus_dir}{The directory that contains the data directories of indexed
-corpora.}
+corpora. If missing, the value of \code{cwb_corpus_dir()} will be used.}
 
 \item{ask}{A \code{logical} value, whether to ask user for confirmation
 before removing a corpus.}
@@ -114,7 +113,7 @@ or \code{download.file}, if \code{tarball} is specified.}
 
 \item{new}{Name of the (new) corpus.}
 
-\item{corpus}{A CWB corpus.}
+\item{corpus}{The ID of a CWB indexed corpus (in upper case).}
 
 \item{data_dir}{The data directory where the files of the CWB corpus live.}
 
@@ -141,19 +140,19 @@ Utility functions to assist the installation and management of indexed CWB
 corpora.
 }
 \details{
-A CWB corpus consists a set of binary files with corpus data 
-  kept together in a data directory, and a registry file, which is a
-  plain test file that details the corpus id, corpus properties, 
-  structural and positional attributes. The registry file also specifies
-  the path to the corpus data directory. Typically, the registry directory
-  and a corpus directory with the data directories for individual corpora
-  are within one parent folder (which might be called "cwb" by default).
-  See the following stylized directory structure.
+A CWB corpus consists a set of binary files with corpus data
+kept together in a data directory, and a registry file, which is a
+plain test file that details the corpus id, corpus properties,
+structural and positional attributes. The registry file also specifies
+the path to the corpus data directory. Typically, the registry directory
+and a corpus directory with the data directories for individual corpora
+are within one parent folder (which might be called "cwb" by default).
+See the following stylized directory structure.
 
 \preformatted{
   .
   |- registry/
-  |  |- corpus1 
+  |  |- corpus1
   |  +- corpus2
   |
   + indexed_corpora/
@@ -169,53 +168,59 @@ A CWB corpus consists a set of binary files with corpus data
 }
 
 The \code{corpus_install} function will assist the installation of a
-  corpus. The following scenarios are offered: 
+corpus. The following scenarios are offered:
 \itemize{
-  \item{If argument \code{tarball} is a local tarball, the tarball will
-  be extracted and files will be moved.}
-  \item{If \code{tarball} is a URL, the tarball will be downloaded from
-  the online location. It is possible to state user credentials using the
-  arguments \code{user} and \code{password}. Then the aforementioned
-  installation (scenario 1) is executed. If argument \code{pkg} is the
-  name of an installed package, corpus files will be moved into this 
-  package.}
-  \item{If argument \code{doi} is Document Object Identifier (DOI), the URL
-  from which a corpus tarball can be downloaded is derived from the
-  information available at that location. The tarball is downloaded and the
-  corpus installed. If argument \code{pkg} is defined, files will be moved
-  into a R package, the syste registry and corpus directories are used
-  otherwise. Note that at this stage, it is assumed that the DOI has been
-  awarded by \href{https://zenodo.org/}{Zenodo}}
-  \item{If argument \code{pkg} is provided and specifies an R package (and
-  \code{tarball} is \code{NULL}), the corpus package available at a
-  CRAN-style repository specified by argument \code{repo} will be installed.
-  Internally, the \code{install.packages} function is called and further
-  arguments can be passed into this function call. This can be used to pass
-  user credentials, e.g. by adding \code{method = "wget" extra = "--user
+\item{If argument \code{tarball} is a local tarball, the tarball will
+be extracted and files will be moved.}
+\item{If \code{tarball} is a URL, the tarball will be downloaded from
+the online location. It is possible to state user credentials using the
+arguments \code{user} and \code{password}. Then the aforementioned
+installation (scenario 1) is executed. If argument \code{pkg} is the
+name of an installed package, corpus files will be moved into this
+package.}
+\item{If argument \code{doi} is Document Object Identifier (DOI), the URL
+from which a corpus tarball can be downloaded is derived from the
+information available at that location. The tarball is downloaded and the
+corpus installed. If argument \code{pkg} is defined, files will be moved
+into a R package, the syste registry and corpus directories are used
+otherwise. Note that at this stage, it is assumed that the DOI has been
+awarded by \href{https://zenodo.org/}{Zenodo}}
+\item{If argument \code{pkg} is provided and specifies an R package (and
+\code{tarball} is \code{NULL}), the corpus package available at a
+CRAN-style repository specified by argument \code{repo} will be installed.
+Internally, the \code{install.packages} function is called and further
+arguments can be passed into this function call. This can be used to pass
+user credentials, e.g. by adding \code{method = "wget" extra = "--user
   donald --password duck"}.
-  }
-}   
+}
+}
 If the corpus to be installed is already available, a dialogue will ask the
 user whether an existing corpus shall be deleted and installed anew, if
 argument \code{ask} is \code{TRUE}.
 
 \code{corpus_packages} will detect the packages that include CWB
-  corpora. Note that the directory structure of all installed packages is
-  evaluated which may be slow on network-mounted file systems.
+corpora. Note that the directory structure of all installed packages is
+evaluated which may be slow on network-mounted file systems.
 
 \code{corpus_rename} will rename a corpus, affecting the name of the
-  registry file, the corpus id, and the name of the directory where data
-  files reside.
+registry file, the corpus id, and the name of the directory where data
+files reside.
 
 \code{corpus_remove} can be used to delete a corpus.
 
 \code{corpus_as_tarball} will create a tarball (.tar.gz-file) with
-  two subdirectories. The 'registry' subdirectory will host the registry file
-  for the tarred corpus. The data files will be put in a subdirectory with
-  the corpus name in the 'indexed_corpora' subdirectory.
+two subdirectories. The 'registry' subdirectory will host the registry file
+for the tarred corpus. The data files will be put in a subdirectory with
+the corpus name in the 'indexed_corpora' subdirectory.
 
 \code{corpus_copy} will create a copy of a corpus (useful for
-  experimental modifications, for instance).
+experimental modifications, for instance).
+
+\code{corpus_get_version} parses the registry file and derives the
+corpus version number from the corpus properties. The return value is a
+\code{numeric_version} class object. The corpus version is expected to follow
+semantic versioning (three digits, e.g. '0.8.1'). If the corpus version
+has another format or if it is not available, the return value is \code{NA}.
 }
 \examples{
 registry_file_new <- file.path(

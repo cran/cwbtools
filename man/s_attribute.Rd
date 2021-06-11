@@ -8,6 +8,7 @@
 \alias{s_attribute_get_regions}
 \alias{s_attribute_merge}
 \alias{s_attribute_delete}
+\alias{s_attribute_rename}
 \title{Read, process and write data on structural attributes.}
 \usage{
 s_attribute_encode(
@@ -39,6 +40,8 @@ s_attribute_get_regions(s_attribute, data_dir)
 s_attribute_merge(x, y)
 
 s_attribute_delete(corpus, s_attribute)
+
+s_attribute_rename(corpus, old, new, registry_dir, verbose = TRUE)
 }
 \arguments{
 \item{values}{A character vector with the values of the structural attribute.}
@@ -72,6 +75,13 @@ coercible to a \code{data.table}) with three columns ("cpos_left",
 \item{y}{Data defining a second s-attribute, a \code{data.table} (or an
 object coercible to a \code{data.table})with three columns ("cpos_left",
 "cpos_right", "value").}
+
+\item{old}{A \code{character} vector with s-attributes to be renamed.}
+
+\item{new}{A \code{character} vector with new names of s-attributes. The vector
+needs to have the same length as vector \code{old}. The 1st, 2nd, 3rd ... nth
+attribute stated in vector \code{old} will get the new names at the 1st, 2nd,
+3rd, ... nth position of vector \code{new}.}
 }
 \description{
 Read, process and write data on structural attributes.
@@ -92,34 +102,37 @@ as a helper for \code{corpus_recode} that will recode all s-attributes, all p-at
 and will reset the encoding in the registry file.
 
 \code{s_attribute_files} will return a named character vector with
-  the data files (extensions: "avs", "avx", "rng") in the directory indicated
-  by \code{data_dir} for the structural attribute \code{s_attribute}.
+the data files (extensions: "avs", "avx", "rng") in the directory indicated
+by \code{data_dir} for the structural attribute \code{s_attribute}.
 
 \code{s_attribute_get_values} is equivalent to performing the CL
-  function cl_struc2id for all strucs of a structural attribute. It is a
-  "pure R" operation that is faster than using CL, as it processes entire
-  files for the s-attribute directly. The return value is a \code{character}
-  vector with all string values for the s-attribute.
+function cl_struc2id for all strucs of a structural attribute. It is a
+"pure R" operation that is faster than using CL, as it processes entire
+files for the s-attribute directly. The return value is a \code{character}
+vector with all string values for the s-attribute.
 
 \code{s_attribute_get_regions} will return a two-column integer
-  matrix with regions for the strucs of a given s-attribute. Left corpus
-  positions are in the first column, right corpus positions in the second
-  column. The result is equivalent to calling RcppCWB::get_region_matrix for
-  all strucs of a s-attribute, but may be somewhat faster. It is a "pure R"
-  function which is fast as it processes files entirely and directly.
+matrix with regions for the strucs of a given s-attribute. Left corpus
+positions are in the first column, right corpus positions in the second
+column. The result is equivalent to calling RcppCWB::get_region_matrix for
+all strucs of a s-attribute, but may be somewhat faster. It is a "pure R"
+function which is fast as it processes files entirely and directly.
 
 \code{s_attribute_merge} combines two tables with regions for
-  s-attributes checking for intersections that may cause problems. The
-  heuristic is to keep all non-intersecting annotations and those annotations
-  that define the same region in object \code{x} and object \code{y}.
-  Annotations of \code{x} and \code{y} which overlap uncleanly, i.e. without
-  an identity of the left and the right corpus position ("cpos_left" /
-  "cpos_right") are dropped. The scenario for using the function is to decode
-  a s-attribute (using \code{s_attribute_decode}), mix in an additional
-  annotation, and to re-encode the enhanced s-attribute (using
-  \code{s_attribute_encode}).
+s-attributes checking for intersections that may cause problems. The
+heuristic is to keep all non-intersecting annotations and those annotations
+that define the same region in object \code{x} and object \code{y}.
+Annotations of \code{x} and \code{y} which overlap uncleanly, i.e. without
+an identity of the left and the right corpus position ("cpos_left" /
+"cpos_right") are dropped. The scenario for using the function is to decode
+a s-attribute (using \code{s_attribute_decode}), mix in an additional
+annotation, and to re-encode the enhanced s-attribute (using
+\code{s_attribute_encode}).
 
 Function \code{s_attribute_delete} is not yet implemented.
+
+Function \code{s_attribute_rename} can be used to rename a
+structural attribute.
 }
 \examples{
 require("RcppCWB")

@@ -1,5 +1,5 @@
 #' @title Manage directories for indexed corpora
-#' 
+#'
 #' @description The Corpus Workbench (CWB) stores the binary files for
 #'   structural and positional attributes in an individual 'data directory'
 #'   (referred to by argument \code{data_dir}) for each corpus. The data
@@ -29,26 +29,26 @@
 #' @param corpus_dir Path to the directory with data directories for corpora.
 #' @export cwb_corpus_dir
 #' @rdname directories
-cwb_corpus_dir <- function(registry_dir){
-  
-  if (missing(registry_dir)) registry_dir <- cwb_registry_dir()
-  
+cwb_corpus_dir <- function(registry_dir, verbose = TRUE){
+
+  if (missing(registry_dir)) registry_dir <- cwb_registry_dir(verbose = FALSE)
+
   if (is.null(registry_dir)) return(NULL)
 
   cwb_dir <- dirname(registry_dir)
-  candidate_id <- grep("corp(us|ora)", list.files(file.path(cwb_dir), full.names = FALSE))
-  candidate <- grep("corp(us|ora)", list.files(file.path(cwb_dir), full.names = TRUE), value = TRUE)[candidate_id]
+  candidate_id <- grep("corp(us|ora)", list.files(cwb_dir, full.names = FALSE))
+  candidate <- list.files(cwb_dir, full.names = TRUE)[candidate_id]
   candidate <- candidate[file.info(candidate)[["isdir"]]]
-  
+
   if (length(candidate) == 0L){
     data_dirs <- unname(sapply(
       list.files(registry_dir),
       function(corpus) registry_file_parse(corpus = corpus, registry_dir = registry_dir)[["home"]]
     ))
-    
+
     # exclude temporary directories
     data_dirs <- data_dirs[!unname(sapply(data_dirs, function(data_dir) grepl("^Rtmp.*$", basename(dirname(data_dir)))))]
-    
+
     is_in_libdir <- sapply(
       data_dirs,
       function(data_dir) sapply(.libPaths(), function(libdir) grepl(sprintf("^%s.*?$", libdir), data_dir))
@@ -59,14 +59,15 @@ cwb_corpus_dir <- function(registry_dir){
       warning("Cannot suggest a corpus directory based on data directories as stated in registry files.")
       corpus_dir <- NULL
     }
-  
+
   } else if (length(candidate) >= 2L){
     warning("There are at least two candidates for corpus directory in the parent directory of the registry directory.")
     corpus_dir <- NULL
   } else if (length(candidate) == 1L){
     corpus_dir <- candidate
+    if (verbose) cli_alert_success(sprintf("directory with data directories found: {col_cyan('%s')}", corpus_dir))
   }
-  
+
   corpus_dir
 }
 
@@ -79,11 +80,12 @@ cwb_corpus_dir <- function(registry_dir){
 #'   character vector or \code{NULL}, if no registry directory can be detected.
 #' @rdname directories
 #' @export cwb_registry_dir
-cwb_registry_dir <- function(){
+cwb_registry_dir <- function(verbose = TRUE){
   if (isFALSE(is.null(getOption("polmineR.corpus_registry")))){
     # If polmineR has been loaded, the CORPUS_REGISTRY environment variable will
     # have been reset, and the system registry is stored in the options
     if (nchar(getOption("polmineR.corpus_registry")) > 0L){
+      if (verbose) cli_alert_success(sprintf("registry directory: {col_cyan('%s')}", getOption("polmineR.corpus_registry")))
       return(getOption("polmineR.corpus_registry"))
     } else {
       return(NULL)
@@ -96,6 +98,7 @@ cwb_registry_dir <- function(){
           "This may be a cause for ensuing problems to find corpora."
         )
       }
+      if (verbose) cli_alert_success(sprintf("registry directory: {col_cyan('%s')}", Sys.getenv("CORPUS_REGISTRY")))
       return(Sys.getenv("CORPUS_REGISTRY"))
     } else {
       return(NULL)
@@ -106,20 +109,22 @@ cwb_registry_dir <- function(){
 
 #' @details \code{cwb_directories} will return a named character vector with the
 #'   registry directory and the corpus directory.
-#' @param prefix The base path that will be prefixed 
+#' @param prefix The base path that will be prefixed
 #' @param ask A \code{logical} value, whether to prompt user before creating
 #'   directories.
 #' @rdname directories
 #' @export cwb_directories
 #' @importFrom utils menu
-cwb_directories <- function(registry_dir = NULL, corpus_dir = NULL){
-  registry_dir <- if (is.null(registry_dir)) cwb_registry_dir() else registry_dir
+cwb_directories <- function(registry_dir = NULL, corpus_dir = NULL, verbose = TRUE){
+  registry_dir <- if (is.null(registry_dir)) cwb_registry_dir(verbose = FALSE) else registry_dir
   if (isFALSE(is.null(registry_dir))){
     if (isFALSE(dir.exists(registry_dir))){
       stop(sprintf("Registry directory '%s' does not exist.", registry_dir))
     }
   }
-  corpus_dir <- if (is.null(corpus_dir)) cwb_corpus_dir(registry_dir) else corpus_dir
+  if (verbose) cli_alert_success(sprintf("registry directory: {col_cyan('%s')}", registry_dir))
+  corpus_dir <- if (is.null(corpus_dir)) cwb_corpus_dir(registry_dir, verbose = FALSE) else corpus_dir
+  if (verbose) cli_alert_success(sprintf("directory with data directories: {col_cyan('%s')}", corpus_dir))
   c(registry_dir = registry_dir, corpus_dir = corpus_dir)
 }
 
@@ -133,9 +138,15 @@ cwb_directories <- function(registry_dir = NULL, corpus_dir = NULL){
 #' @rdname directories
 #' @export create_cwb_directories
 #' @importFrom cli cat_rule
+#' @importFrom fs path_expand path_tidy path
 create_cwb_directories <- function(prefix = "~/cwb", ask = interactive(), verbose = TRUE){
-  
-  prefix <- path.expand(prefix)
+
+  prefix <- if (.Platform$OS.type == "windows"){
+    path_tidy(utils::shortPathName(path_expand(prefix)))
+  } else {
+    path_expand(prefix)
+  }
+
 
   if (dir.exists(prefix)){
     if (file.access(prefix, mode = 2) != 0L){
@@ -188,11 +199,8 @@ create_cwb_directories <- function(prefix = "~/cwb", ask = interactive(), verbos
       if (verbose) cli_alert_danger(sprintf("parent directory {.path %s} for registry directory and corpus directory not found / created!", prefix))
     }
   }
-  
-  cwb_dirs <- c(
-    registry_dir = file.path(prefix, "registry"),
-    corpus_dir = file.path(prefix, "indexed_corpora")
-  )
+
+  cwb_dirs <- c(registry_dir = path(prefix, "registry"), corpus_dir = path(prefix, "indexed_corpora"))
 
   for (dirtype in names(cwb_dirs)){
     what <- gsub("^(.*?)_dir$", "\\1", dirtype)
@@ -207,14 +215,14 @@ create_cwb_directories <- function(prefix = "~/cwb", ask = interactive(), verbos
       }
     }
   }
-  
+
   Sys.setenv(CORPUS_REGISTRY = cwb_dirs[["registry_dir"]])
   if (verbose){
     cli_alert_success(
       sprintf("environment variable {.envvar CORPUS_REGISTRY} set as: {.path %s}", cwb_dirs[["registry_dir"]])
     )
-  }  
-  
+  }
+
   cwb_dirs
 }
 
@@ -231,29 +239,29 @@ create_cwb_directories <- function(prefix = "~/cwb", ask = interactive(), verbos
 #' @export use_corpus_registry_envvar
 #' @rdname directories
 use_corpus_registry_envvar <- function(registry_dir){
-  
+
   if (isFALSE(interactive())){
     stop(
       "Defining the environment variable CORPUS_REGISTRY in the .Renviron file ",
       "is possible only when R is being used interactively."
     )
   }
-  
+
   if (!dir.exists(registry_dir)){
     stop("directory provided by argument registry_dir does not exist.")
   }
-  
+
   cli_rule("Define CORPUS_REGISTRY environmment variable in .Renviron file")
   user_input <- menu(
     choices = c("Yes", "No, I want to edit the .Renviron file myself"),
     title = cli_text(
-      "I want the {.pkg cwbtools} package to set the {.envvar CORPUS_REGISTRY} environment variable ", 
+      "I want the {.pkg cwbtools} package to set the {.envvar CORPUS_REGISTRY} environment variable ",
       "in the {.file .Renviron} file (see {.code ?Startup} for details)."
     )
   )
-  
+
   if (user_input == 1L){
-    
+
     if (nchar(Sys.getenv("R_ENVIRON_USER")) > 0L){
       renviron_file <- Sys.getenv("R_ENVIRON_USER")
       cli_alert_info(sprintf("using {.path .Renviron}-file defined in the environment variable {.envvar R_ENVIRON_USER}: {.path %s}", renviron_file))
@@ -261,16 +269,16 @@ use_corpus_registry_envvar <- function(registry_dir){
       renviron_file <- path.expand("~/.Renviron")
       cli_alert_info(sprintf("using default {.path .Renviron}-file: {.path %s}", renviron_file))
     }
-    
+
     if (file.exists(renviron_file)){
-      
+
       if (file.access(renviron_file, mode = 2) == 0L){
         cli_alert_info("the existing {.path .Renviron}-file exists and will be modified")
       } else {
         cli_alert_danger("you do not have write permissions for the {.path .Renviron} file - aborting")
         return(FALSE)
       }
-      
+
       if (any(grepl("^\\s*CORPUS_REGISTRY\\s*=", readLines(renviron_file)))){
         cli_alert_danger(
           paste(
@@ -281,9 +289,9 @@ use_corpus_registry_envvar <- function(registry_dir){
         )
         return(FALSE)
       }
-      
+
       cat(sprintf('CORPUS_REGISTRY="%s"\n', registry_dir), file = renviron_file, append = TRUE)
-      
+
     } else {
       cli_alert_info("the {.path .Renviron}-file does not yet exist and needs to be created")
       renviron_dirname <- dirname(renviron_file)
@@ -292,7 +300,7 @@ use_corpus_registry_envvar <- function(registry_dir){
       }
       writeLines(text = sprintf('CORPUS_REGISTRY="%s"', registry_dir), con = renviron_file)
     }
-    
+
     if (any(grepl("^\\s*CORPUS_REGISTRY\\s*=", readLines(renviron_file)))){
       cli_alert_success(
         sprintf(
