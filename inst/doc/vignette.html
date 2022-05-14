@@ -12,11 +12,23 @@
 
 <meta name="author" content="Andreas Blätte (andreas.blaette@uni-due.de)" />
 
-<meta name="date" content="2021-06-11" />
+<meta name="date" content="2022-05-14" />
 
 <title>Introducing ‘cwbtools’</title>
 
-<script src="data:application/javascript;base64,Ly8gUGFuZG9jIDIuOSBhZGRzIGF0dHJpYnV0ZXMgb24gYm90aCBoZWFkZXIgYW5kIGRpdi4gV2UgcmVtb3ZlIHRoZSBmb3JtZXIgKHRvCi8vIGJlIGNvbXBhdGlibGUgd2l0aCB0aGUgYmVoYXZpb3Igb2YgUGFuZG9jIDwgMi44KS4KZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKGUpIHsKICB2YXIgaHMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCJkaXYuc2VjdGlvbltjbGFzcyo9J2xldmVsJ10gPiA6Zmlyc3QtY2hpbGQiKTsKICB2YXIgaSwgaCwgYTsKICBmb3IgKGkgPSAwOyBpIDwgaHMubGVuZ3RoOyBpKyspIHsKICAgIGggPSBoc1tpXTsKICAgIGlmICghL15oWzEtNl0kL2kudGVzdChoLnRhZ05hbWUpKSBjb250aW51ZTsgIC8vIGl0IHNob3VsZCBiZSBhIGhlYWRlciBoMS1oNgogICAgYSA9IGguYXR0cmlidXRlczsKICAgIHdoaWxlIChhLmxlbmd0aCA+IDApIGgucmVtb3ZlQXR0cmlidXRlKGFbMF0ubmFtZSk7CiAgfQp9KTsK"></script>
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -26,6 +38,7 @@
   div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
   ul.task-list{list-style: none;}
     </style>
+
 
 
 <style type="text/css">
@@ -127,7 +140,187 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 
 
-<link rel="stylesheet" href="data:text/css,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" type="text/css" />
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
 
 
 
@@ -141,60 +334,107 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <h1 class="title toc-ignore">Introducing ‘cwbtools’</h1>
 <h4 class="author">Andreas Blätte (<a href="mailto:andreas.blaette@uni-due.de" class="email">andreas.blaette@uni-due.de</a>)</h4>
-<h4 class="date">2021-06-11</h4>
+<h4 class="date">2022-05-14</h4>
 
 
 
 <div id="using-the-cwbtools-package" class="section level1">
 <h1>Using the ‘cwbtools’ package</h1>
-<p>The <em>cwbtools</em> package offers a toolset to create, modify and manage corpora to be used with the Corpus Workbench (CWB) from within R. It supports the transition from data formats established by well-known R packages such as <a href="https://CRAN.R-project.org/package=tm">tm</a>, <a href="https://CRAN.R-project.org/package=quanteda">quanteda</a> or <a href="https://CRAN.R-project.org/package=tidytext">tidytext</a> to a CWB corpus, so that the efficiency of an query system using indexed corpora (i.e. CWB) can be used.</p>
-<p>Moving to CWB indexed corpora is worth considering when working with large corpora. The <em>cwbtools</em> package is designed to be able to work with large data. The core tool of the cwbtools package is the <code>CorpusData</code>-Class. It offers a standard workflow to import and process data, and to generate an indexed corpus. It is implemented as a <a href="https://adv-r.hadley.nz/r6.html">R6 class</a>. The advantage of using the reference semantics of the R6 class system is that there is minimal copying of the data. Handling memory parsimoniously is necessary when working with large corpora.</p>
-<p>Further functions of the package support the creation, modification and management of structural and positional attributes of a corpus, and of registry files. See the manual to learn more about these functions. To learn more about the data structure of the CWB and the CWB jargon, the <a href="http://cwb.sourceforge.net/files/CWB_Encoding_Tutorial.pdf">IMS Open Corpus Workbench (CWB) Corpus Encoding Tutorial</a> is recommended as a point of entry.</p>
-<p>The focus of this vignette is the creation of CWB indexed corpora. We present three scenarios: Creating a corpus (a) from XML, (b) from a <code>tibble</code> and (c) from the <code>VCorpus</code> used by the tm package.</p>
+<p>The <em>cwbtools</em> package offers a toolset to create, modify and
+manage corpora to be used with the Corpus Workbench (CWB) from within R.
+It supports the transition from data formats established by well-known R
+packages such as <a href="https://CRAN.R-project.org/package=tm">tm</a>,
+<a href="https://CRAN.R-project.org/package=quanteda">quanteda</a> or <a href="https://CRAN.R-project.org/package=tidytext">tidytext</a> to a CWB
+corpus, so that the efficiency of an query system using indexed corpora
+(i.e. CWB) can be used.</p>
+<p>Moving to CWB indexed corpora is worth considering when working with
+large corpora. The <em>cwbtools</em> package is designed to be able to
+work with large data. The core tool of the cwbtools package is the
+<code>CorpusData</code>-Class. It offers a standard workflow to import
+and process data, and to generate an indexed corpus. It is implemented
+as a <a href="https://adv-r.hadley.nz/r6.html">R6 class</a>. The
+advantage of using the reference semantics of the R6 class system is
+that there is minimal copying of the data. Handling memory
+parsimoniously is necessary when working with large corpora.</p>
+<p>Further functions of the package support the creation, modification
+and management of structural and positional attributes of a corpus, and
+of registry files. See the manual to learn more about these functions.
+To learn more about the data structure of the CWB and the CWB jargon,
+the <a href="https://cwb.sourceforge.io/files/CWB_Encoding_Tutorial.pdf">IMS
+Open Corpus Workbench (CWB) Corpus Encoding Tutorial</a> is recommended
+as a point of entry.</p>
+<p>The focus of this vignette is the creation of CWB indexed corpora. We
+present three scenarios: Creating a corpus (a) from XML, (b) from a
+<code>tibble</code> and (c) from the <code>VCorpus</code> used by the tm
+package.</p>
 <p>A few preliminary preparations are necessary, however.</p>
 <div id="getting-started" class="section level2">
 <h2>Getting Started</h2>
-<p>The CWB stores each indexed corpora in an individual data directory. Registry files in a ‘registry directory’ (or ‘registry’ in short) describe the indexed corpora and include the path to the data directory.</p>
-<p>For the following examples, we create a temporary directory structure for registry files, and indexed corpora, making sure that these directories exits and are empty.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>tmpdir <span class="ot">&lt;-</span> <span class="fu">tempdir</span>()</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (.Platform<span class="sc">$</span>OS.type <span class="sc">==</span> <span class="st">&quot;windows&quot;</span>) tmpdir <span class="ot">&lt;-</span> <span class="fu">normalizePath</span>(tmpdir, <span class="at">winslash =</span> <span class="st">&quot;/&quot;</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>registry_tmp <span class="ot">&lt;-</span> <span class="fu">file.path</span>(tmpdir, <span class="st">&quot;registry&quot;</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>data_dir_tmp <span class="ot">&lt;-</span> <span class="fu">file.path</span>(tmpdir, <span class="st">&quot;data_dir&quot;</span>)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(registry_tmp)){</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span> (registry_tmp)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.remove</span>(<span class="fu">list.files</span>(registry_tmp, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(data_dir_tmp)) <span class="fu">dir.create</span>(data_dir_tmp)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>regdir_envvar <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">&quot;CORPUS_REGISTRY&quot;</span>)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">CORPUS_REGISTRY =</span> registry_tmp)</span></code></pre></div>
-<p>In addition to <em>cwbtools</em>, we rely extensively on the <a href="https://CRAN.R-project.org/package=data.table">data.table</a> package. It is a good companion to <em>cwbtools</em> because of its efficiency to handle large data. Apart from the processing speed, it supports in-place modifications of data. When corpora grow large, it is advisable to omit copying the data in memory if not absolutely necessary.</p>
+<p>The CWB stores each indexed corpora in an individual data directory.
+Registry files in a ‘registry directory’ (or ‘registry’ in short)
+describe the indexed corpora and include the path to the data
+directory.</p>
+<p>For the following examples, we create a temporary directory structure
+for registry files, and indexed corpora, making sure that these
+directories exits and are empty.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>tmpdir <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path_tidy</span>(<span class="fu">tempdir</span>())</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>registry_tmp <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(tmpdir, <span class="st">&quot;registry&quot;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>data_dir_tmp <span class="ot">&lt;-</span> fs<span class="sc">::</span><span class="fu">path</span>(tmpdir, <span class="st">&quot;data_dir&quot;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(registry_tmp)){</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span> (registry_tmp)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.remove</span>(<span class="fu">list.files</span>(registry_tmp, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(data_dir_tmp)) <span class="fu">dir.create</span>(data_dir_tmp)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>regdir_envvar <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">&quot;CORPUS_REGISTRY&quot;</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">CORPUS_REGISTRY =</span> registry_tmp)</span></code></pre></div>
+<p>In addition to <em>cwbtools</em>, we rely extensively on the <a href="https://CRAN.R-project.org/package=data.table">data.table</a>
+package. It is a good companion to <em>cwbtools</em> because of its
+efficiency to handle large data. Apart from the processing speed, it
+supports in-place modifications of data. When corpora grow large, it is
+advisable to omit copying the data in memory if not absolutely
+necessary.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cwbtools)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span></code></pre></div>
-<p>Core operations on structural and positional attributes are implemented in “pure R”, but the CWB can be downloaded and stored within the package using the <code>cwb_install()</code> function. In the following examples, we will rely on the “pure R” approach.</p>
+<p>Core operations on structural and positional attributes are
+implemented in “pure R”, but the CWB can be downloaded and stored within
+the package using the <code>cwb_install()</code> function. In the
+following examples, we will rely on the “pure R” approach.</p>
 </div>
 <div id="scenario-1-from-xml-to-cwb---un-general-assembly-corpus" class="section level2">
 <h2>Scenario 1: From XML to CWB - UN General Assembly Corpus</h2>
-<p>The first example is to turn a small sample corpus of debates in the UN General Assembly into an indexed corpus. The package includes some XML files that follow a standard suggested by the <a href="https://tei-c.org/">Text Encoding Initiative (TEI)</a>.</p>
+<p>The first example is to turn a small sample corpus of debates in the
+UN General Assembly into an indexed corpus. The package includes some
+XML files that follow a standard suggested by the <a href="https://tei-c.org/">Text Encoding Initiative (TEI)</a>.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>teidir <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="at">package =</span> <span class="st">&quot;cwbtools&quot;</span>, <span class="st">&quot;xml&quot;</span>, <span class="st">&quot;UNGA&quot;</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>teifiles <span class="ot">&lt;-</span> <span class="fu">list.files</span>(teidir, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">list.files</span>(teidir)</span></code></pre></div>
 <pre><code>## [1] &quot;N9986497.xml&quot; &quot;N9986515.xml&quot; &quot;N9986521.xml&quot; &quot;N9986551.xml&quot; &quot;N9986557.xml&quot;
 ## [6] &quot;N9986569.xml&quot; &quot;N9986587.xml&quot;</code></pre>
-<p>For our example, we need an (empty) data directory for the UNGA corpus.</p>
+<p>For our example, we need an (empty) data directory for the UNGA
+corpus.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>unga_data_dir_tmp <span class="ot">&lt;-</span> <span class="fu">file.path</span>(data_dir_tmp, <span class="st">&quot;unga&quot;</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(unga_data_dir_tmp)) <span class="fu">dir.create</span>(unga_data_dir_tmp)</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">list.files</span>(unga_data_dir_tmp, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
-<p>The point of departure then is to create a <code>CorpusData</code> object that will serve as a processor for these files and storage facility for the corpus data. The central fields of the class are named <code>chunktable</code>, <code>tokenstream</code> and <code>metadata</code>. When we inspect the new object at the outset, we will see that these fields are not filled initially.</p>
+<p>The point of departure then is to create a <code>CorpusData</code>
+object that will serve as a processor for these files and storage
+facility for the corpus data. The central fields of the class are named
+<code>chunktable</code>, <code>tokenstream</code> and
+<code>metadata</code>. When we inspect the new object at the outset, we
+will see that these fields are not filled initially.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>UNGA <span class="ot">&lt;-</span> CorpusData<span class="sc">$</span><span class="fu">new</span>()</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>UNGA</span></code></pre></div>
 <pre><code>## chunktable: NULL
 ## tokenstream: NULL
 ## metadata: NULL</code></pre>
-<p>To turn the XML files into the <code>CorpusData object, we use the method</code>$import_xml()`. To be able to add metadata from the header to the metadata table, the method requires a named vector of XPath expressions used to find the metadata within the XML document.</p>
+<p>To turn the XML files into the
+<code>CorpusData object, we use the method</code>$import_xml()`. To be
+able to add metadata from the header to the metadata table, the method
+requires a named vector of XPath expressions used to find the metadata
+within the XML document.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>metadata <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">lp =</span> <span class="st">&quot;//legislativePeriod&quot;</span>, <span class="at">session =</span> <span class="st">&quot;//titleStmt/sessionNo&quot;</span>,</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">date =</span> <span class="st">&quot;//publicationStmt/date&quot;</span>, <span class="at">url =</span> <span class="st">&quot;//sourceDesc/url&quot;</span>,</span>
@@ -205,13 +445,21 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <pre><code>## chunktable: 2 columns / 1148 rows
 ## tokenstream: NULL
 ## metadata: 20 columns / 1148 rows</code></pre>
-<p>The input XML files are TEI files. Speaker information is included in the attributes of a tag named ‘sp’. To maintain the original content, there is a element ‘speaker’ in the document that includes the information on the speaker call without having parsed it. It is not text spoken in the debate, so we consider it as noise to be removed.</p>
+<p>The input XML files are TEI files. Speaker information is included in
+the attributes of a tag named ‘sp’. To maintain the original content,
+there is a element ‘speaker’ in the document that includes the
+information on the speaker call without having parsed it. It is not text
+spoken in the debate, so we consider it as noise to be removed.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>to_keep <span class="ot">&lt;-</span> <span class="fu">which</span>(<span class="fu">is.na</span>(UNGA<span class="sc">$</span>metadata[[<span class="st">&quot;speaker&quot;</span>]]))</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>UNGA<span class="sc">$</span>chunktable <span class="ot">&lt;-</span> UNGA<span class="sc">$</span>chunktable[to_keep]</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>UNGA<span class="sc">$</span>metadata <span class="ot">&lt;-</span> UNGA<span class="sc">$</span>metadata[to_keep][, speaker <span class="sc">:</span><span class="er">=</span> <span class="cn">NULL</span>]</span></code></pre></div>
 <p>We assign more telling column names …</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">setnames</span>(UNGA<span class="sc">$</span>metadata, <span class="at">old =</span> <span class="fu">c</span>(<span class="st">&quot;sp_who&quot;</span>, <span class="st">&quot;sp_state&quot;</span>, <span class="st">&quot;sp_role&quot;</span>), <span class="at">new =</span> <span class="fu">c</span>(<span class="st">&quot;who&quot;</span>, <span class="st">&quot;state&quot;</span>, <span class="st">&quot;role&quot;</span>))</span></code></pre></div>
-<p>The CWB requires a tokenstream as input to generate positional attributes. NLP tools will offer lemmatization, part-of-speech-recognition and more. To keep things simple, we perform a very simple tokenization that relies on the <a href="https://CRAN.R-project.org/package=tokenizers">tokenizers</a> package.</p>
+<p>The CWB requires a tokenstream as input to generate positional
+attributes. NLP tools will offer lemmatization,
+part-of-speech-recognition and more. To keep things simple, we perform a
+very simple tokenization that relies on the <a href="https://CRAN.R-project.org/package=tokenizers">tokenizers</a>
+package.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>UNGA<span class="sc">$</span><span class="fu">tokenize</span>(<span class="at">lowercase =</span> <span class="cn">FALSE</span>, <span class="at">strip_punct =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>UNGA</span></code></pre></div>
 <p>Let us see how it looks like now …</p>
@@ -228,7 +476,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ## 127080: 1148      1 127079
 ## 127081: 1148    p.m 127080
 ## 127082: 1148      . 127081</code></pre>
-<p>The <code>CorpusData</code> object now includes a table with the token stream, and we are ready to import the corpus into the CWB. We use the <code>$encode()</code> method for this purpose. Note that the workers are the <code>p_attribute_encode</code> function (to encode the token stream), and the <code>s_attribute_encode</code> function (to encode the structural attributes / the metadata).</p>
+<p>The <code>CorpusData</code> object now includes a table with the
+token stream, and we are ready to import the corpus into the CWB. We use
+the <code>$encode()</code> method for this purpose. Note that the
+workers are the <code>p_attribute_encode</code> function (to encode the
+token stream), and the <code>s_attribute_encode</code> function (to
+encode the structural attributes / the metadata).</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>s_attrs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;who&quot;</span>, <span class="st">&quot;state&quot;</span>, <span class="st">&quot;role&quot;</span>, <span class="st">&quot;lp&quot;</span>, <span class="st">&quot;session&quot;</span>, <span class="st">&quot;date&quot;</span>)</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>UNGA<span class="sc">$</span><span class="fu">encode</span>(</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">registry_dir =</span> registry_tmp, <span class="at">data_dir =</span> unga_data_dir_tmp,</span>
@@ -236,12 +489,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_attributes =</span> <span class="st">&quot;word&quot;</span>, <span class="at">s_attributes =</span> <span class="fu">character</span>(),</span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">compress =</span> <span class="cn">FALSE</span></span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
-<pre><code>## Corpus to delete (ID): UNGA
-## Corpus name: UNGA
-## Number of loads before reset: 1
-## Number of loads resetted: 1
-## === Makeall: processing corpus UNGA ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpEfobd2/registry
+<pre><code>## === Makeall: processing corpus UNGA ===
+## Registry directory: /var/folders/fw/qwt11pjx1qs83dl2jwltcvmr0000gn/T/RtmpHu0QEP/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
@@ -253,8 +502,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ##  ? validating REVCORP ... OK
 ##  - index        OK
 ## ========================================</code></pre>
-<p>In this example, the logical parameter <code>compress</code> is `TRUE. This triggers a so-called “huffcode”&quot; compression, which will reduce corpus size and speed up queries. For big corpora, compression certainly makes sense, but it can be time-consuming. If you want to create a corpus experimentally and do not yet need optimization, performing the compression can be postponed or omitted.</p>
-<p>The indexed corpus has now been prepared and can be used with CQP, CQPweb, or – if you like R – with a package such as <a href="https://CRAN.R-project.org/package=polmineR">polmineR</a>. To see quickly whether everything has worked out as intended (and to keep installation requirements at a minimum), we use the low-level functionality of the <a href="https://CRAN.R-project.org/package=RcppCWB">RcppCWB</a> package.</p>
+<p>In this example, the logical parameter <code>compress</code> is
+`TRUE. This triggers a so-called “huffcode”” compression, which will
+reduce corpus size and speed up queries. For big corpora, compression
+certainly makes sense, but it can be time-consuming. If you want to
+create a corpus experimentally and do not yet need optimization,
+performing the compression can be postponed or omitted.</p>
+<p>The indexed corpus has now been prepared and can be used with CQP,
+CQPweb, or – if you like R – with a package such as <a href="https://CRAN.R-project.org/package=polmineR">polmineR</a>. To see
+quickly whether everything has worked out as intended (and to keep
+installation requirements at a minimum), we use the low-level
+functionality of the <a href="https://CRAN.R-project.org/package=RcppCWB">RcppCWB</a>
+package.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>RcppCWB<span class="sc">::</span><span class="fu">cqp_initialize</span>()</span></code></pre></div>
 <pre><code>## Warning in RcppCWB::cqp_initialize(): CQP has already been initialized. Re-
 ## initialization is not possible. Only resetting registry.</code></pre>
@@ -292,26 +551,35 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ## [6] &quot;and the promotion of durable peace and sustainable development in Africa&quot;</code></pre>
 <div id="scenario-2-tidytext-to-cwb" class="section level3">
 <h3>Scenario 2: Tidytext to CWB</h3>
-<p>In a second scenario, we create a corpus of Jane Austen’s books (included in the package <a href="https://CRAN.R-project.org/package=janeaustenr">janeaustenr</a>). Again, we start by preparing an (empty) data directory …</p>
+<p>In a second scenario, we create a corpus of Jane Austen’s books
+(included in the package <a href="https://CRAN.R-project.org/package=janeaustenr">janeaustenr</a>).
+Again, we start by preparing an (empty) data directory …</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>austen_data_dir_tmp <span class="ot">&lt;-</span> <span class="fu">file.path</span>(data_dir_tmp, <span class="st">&quot;austen&quot;</span>)</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(austen_data_dir_tmp)) <span class="fu">dir.create</span>(austen_data_dir_tmp)</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">list.files</span>(austen_data_dir_tmp, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
 <p>… and instantiating a <code>CorpusData</code> object.</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>Austen <span class="ot">&lt;-</span> CorpusData<span class="sc">$</span><span class="fu">new</span>()</span></code></pre></div>
-<p>The <code>tidytext</code> package offers an efficient workflow to create the token stream we can assign to the <code>CorpusData</code> object.</p>
+<p>The <code>tidytext</code> package offers an efficient workflow to
+create the token stream we can assign to the <code>CorpusData</code>
+object.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>books <span class="ot">&lt;-</span> janeaustenr<span class="sc">::</span><span class="fu">austen_books</span>()</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>tbl <span class="ot">&lt;-</span> tidytext<span class="sc">::</span><span class="fu">unnest_tokens</span>(books, word, text, <span class="at">to_lower =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>Austen<span class="sc">$</span>tokenstream <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(tbl)</span></code></pre></div>
-<p>To demonstrate that we can use an additional positional attribute, we stem the tokens using the <a href="https://CRAN.R-project.org/package=SnowballC">SnowballC</a> package.</p>
+<p>To demonstrate that we can use an additional positional attribute, we
+stem the tokens using the <a href="https://CRAN.R-project.org/package=SnowballC">SnowballC</a>
+package.</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>Austen<span class="sc">$</span>tokenstream[, stem <span class="sc">:</span><span class="er">=</span> SnowballC<span class="sc">::</span><span class="fu">wordStem</span>(tbl[[<span class="st">&quot;word&quot;</span>]], <span class="at">language =</span> <span class="st">&quot;english&quot;</span>)]</span></code></pre></div>
-<p>In this case, (zero-based!) corpus positions need to be assigned explicitly.</p>
+<p>In this case, (zero-based!) corpus positions need to be assigned
+explicitly.</p>
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>Austen<span class="sc">$</span>tokenstream[, cpos <span class="sc">:</span><span class="er">=</span> 0L<span class="sc">:</span>(<span class="fu">nrow</span>(tbl) <span class="sc">-</span> 1L)]</span></code></pre></div>
 <p>We can now create the table with the structural attributes.</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>cpos_max_min <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">list</span>(<span class="at">cpos_left =</span> <span class="fu">min</span>(x[[<span class="st">&quot;cpos&quot;</span>]]), <span class="at">cpos_right =</span> <span class="fu">max</span>(x[[<span class="st">&quot;cpos&quot;</span>]]))</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>Austen<span class="sc">$</span>metadata <span class="ot">&lt;-</span> Austen<span class="sc">$</span>tokenstream[, <span class="fu">cpos_max_min</span>(.SD), by <span class="ot">=</span> book]</span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>Austen<span class="sc">$</span>metadata[, book <span class="sc">:</span><span class="er">=</span> <span class="fu">as.character</span>(book)]</span>
 <span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="fu">setcolorder</span>(Austen<span class="sc">$</span>metadata, <span class="fu">c</span>(<span class="st">&quot;cpos_left&quot;</span>, <span class="st">&quot;cpos_right&quot;</span>, <span class="st">&quot;book&quot;</span>))</span></code></pre></div>
-<p>A few finishing touches and we have the token stream ready to be encoded: We remove the metadata from the table in the <code>tokenstream</code> field and order the columns nicely.</p>
+<p>A few finishing touches and we have the token stream ready to be
+encoded: We remove the metadata from the table in the
+<code>tokenstream</code> field and order the columns nicely.</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>Austen<span class="sc">$</span>tokenstream[, book <span class="sc">:</span><span class="er">=</span> <span class="cn">NULL</span>]</span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">setcolorder</span>(Austen<span class="sc">$</span>tokenstream, <span class="fu">c</span>(<span class="st">&quot;cpos&quot;</span>, <span class="st">&quot;word&quot;</span>, <span class="st">&quot;stem&quot;</span>))</span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>Austen<span class="sc">$</span>tokenstream</span></code></pre></div>
@@ -334,12 +602,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">registry_dir =</span> registry_tmp, <span class="at">data_dir =</span> austen_data_dir_tmp,</span>
 <span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>   <span class="at">method =</span> <span class="st">&quot;R&quot;</span>, <span class="at">compress =</span> <span class="cn">FALSE</span></span>
 <span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<pre><code>## Corpus to delete (ID): AUSTEN
-## Corpus name: AUSTEN
-## Number of loads before reset: 1
-## Number of loads resetted: 1
-## === Makeall: processing corpus AUSTEN ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpEfobd2/registry
+<pre><code>## === Makeall: processing corpus AUSTEN ===
+## Registry directory: /var/folders/fw/qwt11pjx1qs83dl2jwltcvmr0000gn/T/RtmpHu0QEP/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
@@ -351,12 +615,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ##  ? validating REVCORP ... OK
 ##  - index        OK
 ## ========================================
-## Corpus to delete (ID): AUSTEN
-## Corpus name: AUSTEN
-## Number of loads before reset: 2
-## Number of loads resetted: 1
 ## === Makeall: processing corpus AUSTEN ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpEfobd2/registry
+## Registry directory: /var/folders/fw/qwt11pjx1qs83dl2jwltcvmr0000gn/T/RtmpHu0QEP/registry
 ## ATTRIBUTE stem
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
@@ -368,10 +628,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ##  ? validating REVCORP ... OK
 ##  - index        OK
 ## ========================================</code></pre>
-<p>The new corpus will not be available unless we trigger that files in the registry directory are re-read.</p>
+<p>The new corpus will not be available unless we trigger that files in
+the registry directory are re-read.</p>
 <div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>RcppCWB<span class="sc">::</span><span class="fu">cqp_reset_registry</span>(<span class="at">registry =</span> registry_tmp)</span></code></pre></div>
 <pre><code>## [1] TRUE</code></pre>
-<p>This is a rudimentary check (using low-level RcppCWB functions) whether to corpus can be used. How often does the token “pride” occur?</p>
+<p>This is a rudimentary check (using low-level RcppCWB functions)
+whether to corpus can be used. How often does the token “pride”
+occur?</p>
 <div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>corpus <span class="ot">&lt;-</span> <span class="st">&quot;AUSTEN&quot;</span></span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>token <span class="ot">&lt;-</span> <span class="st">&quot;pride&quot;</span></span>
 <span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>p_attr <span class="ot">&lt;-</span> <span class="st">&quot;word&quot;</span></span>
@@ -383,41 +646,48 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="scenario-3-from-tm-package-vcorpus-to-cwb" class="section level3">
 <h3>Scenario 3: From tm-package VCorpus to CWB</h3>
-<p>In the third scenario, we will make the transition from a <code>VCorpus</code> (tm package) to a CWB indexed corpus. We use the Reuters corpus that is included as sample data in the tm package.</p>
+<p>In the third scenario, we will make the transition from a
+<code>VCorpus</code> (tm package) to a CWB indexed corpus. We use the
+Reuters corpus that is included as sample data in the tm package.</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tm)</span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>reut21578 <span class="ot">&lt;-</span> <span class="fu">system.file</span>(<span class="st">&quot;texts&quot;</span>, <span class="st">&quot;crude&quot;</span>, <span class="at">package =</span> <span class="st">&quot;tm&quot;</span>)</span>
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>reuters.tm <span class="ot">&lt;-</span> <span class="fu">VCorpus</span>(<span class="fu">DirSource</span>(reut21578), <span class="fu">list</span>(<span class="at">reader =</span> readReut21578XMLasPlain))</span></code></pre></div>
-<p>A quick way to attain the data format required for the <code>CorpusData</code> class is to coerce the <code>VCorpus</code> to a <code>tibble</code>, using respective functionality of the <a href="https://CRAN.R-project.org/package=tidytext">tidytext</a> package.</p>
+<p>A quick way to attain the data format required for the
+<code>CorpusData</code> class is to coerce the <code>VCorpus</code> to a
+<code>tibble</code>, using respective functionality of the <a href="https://CRAN.R-project.org/package=tidytext">tidytext</a>
+package.</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidytext)</span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>reuters.tbl <span class="ot">&lt;-</span> <span class="fu">tidy</span>(reuters.tm)</span>
 <span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>reuters.tbl</span></code></pre></div>
-<pre><code>## # A tibble: 20 x 17
-##    author  datetimestamp       description heading  id    language origin topics
-##    &lt;chr&gt;   &lt;dttm&gt;              &lt;chr&gt;       &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt; 
-##  1 &lt;NA&gt;    1987-02-26 17:00:56 &quot;&quot;          DIAMOND… 127   en       Reute… YES   
-##  2 BY TED… 1987-02-26 17:34:11 &quot;&quot;          OPEC MA… 144   en       Reute… YES   
-##  3 &lt;NA&gt;    1987-02-26 18:18:00 &quot;&quot;          TEXACO … 191   en       Reute… YES   
-##  4 &lt;NA&gt;    1987-02-26 18:21:01 &quot;&quot;          MARATHO… 194   en       Reute… YES   
-##  5 &lt;NA&gt;    1987-02-26 19:00:57 &quot;&quot;          HOUSTON… 211   en       Reute… YES   
-##  6 &lt;NA&gt;    NA                  &quot;&quot;          KUWAIT … 236   en       Reute… YES   
-##  7 By Jer… NA                  &quot;&quot;          INDONES… 237   en       Reute… YES   
-##  8 &lt;NA&gt;    NA                  &quot;&quot;          SAUDI R… 242   en       Reute… YES   
-##  9 &lt;NA&gt;    NA                  &quot;&quot;          QATAR U… 246   en       Reute… YES   
-## 10 &lt;NA&gt;    NA                  &quot;&quot;          SAUDI A… 248   en       Reute… YES   
-## 11 &lt;NA&gt;    NA                  &quot;&quot;          SAUDI F… 273   en       Reute… YES   
-## 12 &lt;NA&gt;    NA                  &quot;&quot;          GULF AR… 349   en       Reute… YES   
-## 13 &lt;NA&gt;    NA                  &quot;&quot;          SAUDI A… 352   en       Reute… YES   
-## 14 &lt;NA&gt;    NA                  &quot;&quot;          KUWAIT … 353   en       Reute… YES   
-## 15 &lt;NA&gt;    NA                  &quot;&quot;          PHILADE… 368   en       Reute… YES   
-## 16 &lt;NA&gt;    NA                  &quot;&quot;          STUDY G… 489   en       Reute… YES   
-## 17 &lt;NA&gt;    NA                  &quot;&quot;          STUDY G… 502   en       Reute… YES   
-## 18 &lt;NA&gt;    NA                  &quot;&quot;          UNOCAL … 543   en       Reute… YES   
-## 19 By BER… NA                  &quot;&quot;          NYMEX W… 704   en       Reute… YES   
-## 20 &lt;NA&gt;    NA                  &quot;&quot;          ARGENTI… 708   en       Reute… YES   
+<pre><code>## # A tibble: 20 × 17
+##    author   datetimestamp       description heading id    language origin topics
+##    &lt;chr&gt;    &lt;dttm&gt;              &lt;chr&gt;       &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt; 
+##  1 &lt;NA&gt;     1987-02-26 17:00:56 &quot;&quot;          DIAMON… 127   en       Reute… YES   
+##  2 BY TED … 1987-02-26 17:34:11 &quot;&quot;          OPEC M… 144   en       Reute… YES   
+##  3 &lt;NA&gt;     1987-02-26 18:18:00 &quot;&quot;          TEXACO… 191   en       Reute… YES   
+##  4 &lt;NA&gt;     1987-02-26 18:21:01 &quot;&quot;          MARATH… 194   en       Reute… YES   
+##  5 &lt;NA&gt;     1987-02-26 19:00:57 &quot;&quot;          HOUSTO… 211   en       Reute… YES   
+##  6 &lt;NA&gt;     NA                  &quot;&quot;          KUWAIT… 236   en       Reute… YES   
+##  7 By Jere… NA                  &quot;&quot;          INDONE… 237   en       Reute… YES   
+##  8 &lt;NA&gt;     NA                  &quot;&quot;          SAUDI … 242   en       Reute… YES   
+##  9 &lt;NA&gt;     NA                  &quot;&quot;          QATAR … 246   en       Reute… YES   
+## 10 &lt;NA&gt;     NA                  &quot;&quot;          SAUDI … 248   en       Reute… YES   
+## 11 &lt;NA&gt;     NA                  &quot;&quot;          SAUDI … 273   en       Reute… YES   
+## 12 &lt;NA&gt;     NA                  &quot;&quot;          GULF A… 349   en       Reute… YES   
+## 13 &lt;NA&gt;     NA                  &quot;&quot;          SAUDI … 352   en       Reute… YES   
+## 14 &lt;NA&gt;     NA                  &quot;&quot;          KUWAIT… 353   en       Reute… YES   
+## 15 &lt;NA&gt;     NA                  &quot;&quot;          PHILAD… 368   en       Reute… YES   
+## 16 &lt;NA&gt;     NA                  &quot;&quot;          STUDY … 489   en       Reute… YES   
+## 17 &lt;NA&gt;     NA                  &quot;&quot;          STUDY … 502   en       Reute… YES   
+## 18 &lt;NA&gt;     NA                  &quot;&quot;          UNOCAL… 543   en       Reute… YES   
+## 19 By BERN… NA                  &quot;&quot;          NYMEX … 704   en       Reute… YES   
+## 20 &lt;NA&gt;     NA                  &quot;&quot;          ARGENT… 708   en       Reute… YES   
 ## # … with 9 more variables: lewissplit &lt;chr&gt;, cgisplit &lt;chr&gt;, oldid &lt;chr&gt;,
 ## #   topics_cat &lt;named list&gt;, places &lt;named list&gt;, people &lt;chr&gt;, orgs &lt;chr&gt;,
 ## #   exchanges &lt;chr&gt;, text &lt;chr&gt;</code></pre>
-<p>Columns with the metadata we may want to encode are still character vectors (length &gt; 1). We turn the columns with the topic categorizations and the places into length-one character vectors.</p>
+<p>Columns with the metadata we may want to encode are still character
+vectors (length &gt; 1). We turn the columns with the topic
+categorizations and the places into length-one character vectors.</p>
 <div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>reuters.tbl[[<span class="st">&quot;topics_cat&quot;</span>]] <span class="ot">&lt;-</span> <span class="fu">sapply</span>(</span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  reuters.tbl[[<span class="st">&quot;topics_cat&quot;</span>]],</span>
 <span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(x) <span class="fu">paste</span>(x, <span class="at">collapse =</span> <span class="st">&quot;|&quot;</span>)</span>
@@ -426,12 +696,15 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>  reuters.tbl[[<span class="st">&quot;places&quot;</span>]],</span>
 <span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(x) <span class="fu">paste</span>(x, <span class="at">collapse =</span> <span class="st">&quot;|&quot;</span>)</span>
 <span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>  )</span></code></pre></div>
-<p>This is the input we need. We instantiate a <code>CorpusData</code> object end make sure that a new data directory for the REUTERS corpus exists (and is empty) …</p>
+<p>This is the input we need. We instantiate a <code>CorpusData</code>
+object end make sure that a new data directory for the REUTERS corpus
+exists (and is empty) …</p>
 <div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>Reuters <span class="ot">&lt;-</span> CorpusData<span class="sc">$</span><span class="fu">new</span>()</span>
 <span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>reuters_data_dir_tmp <span class="ot">&lt;-</span> <span class="fu">file.path</span>(data_dir_tmp, <span class="st">&quot;reuters&quot;</span>)</span>
 <span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(reuters_data_dir_tmp)) <span class="fu">dir.create</span>(reuters_data_dir_tmp)</span>
 <span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="fu">file.remove</span>(<span class="fu">list.files</span>(reuters_data_dir_tmp, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span></code></pre></div>
-<p>We assign the chunktable and the metadata, coerced to a <code>data.table</code>, to the object …</p>
+<p>We assign the chunktable and the metadata, coerced to a
+<code>data.table</code>, to the object …</p>
 <div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>Reuters<span class="sc">$</span>chunktable <span class="ot">&lt;-</span> <span class="fu">data.table</span>(reuters.tbl[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;text&quot;</span>)])</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>Reuters<span class="sc">$</span>metadata <span class="ot">&lt;-</span> <span class="fu">data.table</span>(reuters.tbl[,<span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;topics_cat&quot;</span>, <span class="st">&quot;places&quot;</span>)])</span>
 <span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>Reuters</span></code></pre></div>
@@ -462,12 +735,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>   <span class="at">data_dir =</span> data_dir_tmp,</span>
 <span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">method =</span> <span class="st">&quot;R&quot;</span>, <span class="at">compress =</span> <span class="cn">FALSE</span></span>
 <span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
-<pre><code>## Corpus to delete (ID): REUTERS
-## Corpus name: REUTERS
-## Number of loads before reset: 1
-## Number of loads resetted: 1
-## === Makeall: processing corpus REUTERS ===
-## Registry directory: /var/folders/m_/431fjnbs1t32_62d35wvs7pr0000gp/T//RtmpEfobd2/registry
+<pre><code>## === Makeall: processing corpus REUTERS ===
+## Registry directory: /var/folders/fw/qwt11pjx1qs83dl2jwltcvmr0000gn/T/RtmpHu0QEP/registry
 ## ATTRIBUTE word
 ##  + creating LEXSRT ... OK
 ##  - lexicon      OK
@@ -479,9 +748,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 ##  ? validating REVCORP ... OK
 ##  - index        OK
 ## ========================================</code></pre>
-<p>The corpus will not be available unless we call <code>cqp_reset_registry()</code> so that files in the registry directory are reloaded.</p>
+<p>The corpus will not be available unless we call
+<code>cqp_reset_registry()</code> so that files in the registry
+directory are reloaded.</p>
 <div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>RcppCWB<span class="sc">::</span><span class="fu">cqp_reset_registry</span>(<span class="at">registry =</span> registry_tmp)</span></code></pre></div>
-<p>The Reuters corpus is about oil production in the Middle East. To check quickly, whether it works, we count the number of occurrences of the word “oil”.</p>
+<p>The Reuters corpus is about oil production in the Middle East. To
+check quickly, whether it works, we count the number of occurrences of
+the word “oil”.</p>
 <div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>id <span class="ot">&lt;-</span> RcppCWB<span class="sc">::</span><span class="fu">cl_str2id</span>(<span class="at">corpus =</span> <span class="st">&quot;REUTERS&quot;</span>, <span class="at">p_attribute =</span> <span class="st">&quot;word&quot;</span>, <span class="at">str =</span> <span class="st">&quot;oil&quot;</span>, <span class="at">registry =</span> registry_tmp)</span>
 <span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>cpos <span class="ot">&lt;-</span> RcppCWB<span class="sc">::</span><span class="fu">cl_id2cpos</span>(<span class="at">corpus =</span> <span class="st">&quot;REUTERS&quot;</span>, <span class="at">p_attribute =</span> <span class="st">&quot;word&quot;</span>, <span class="at">id =</span> id, <span class="at">registry =</span> registry_tmp)</span>
 <span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>count <span class="ot">&lt;-</span> <span class="fu">length</span>(cpos)</span>

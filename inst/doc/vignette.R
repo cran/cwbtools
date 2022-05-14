@@ -1,9 +1,8 @@
 ## ----create_tmp_dirs----------------------------------------------------------
-tmpdir <- tempdir()
-if (.Platform$OS.type == "windows") tmpdir <- normalizePath(tmpdir, winslash = "/")
+tmpdir <- fs::path_tidy(tempdir())
 
-registry_tmp <- file.path(tmpdir, "registry")
-data_dir_tmp <- file.path(tmpdir, "data_dir")
+registry_tmp <- fs::path(tmpdir, "registry")
+data_dir_tmp <- fs::path(tmpdir, "data_dir")
 
 if (!file.exists(registry_tmp)){
   dir.create (registry_tmp)
