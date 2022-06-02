@@ -1,8 +1,8 @@
 Package: cwbtools
 Type: Package
 Title: Tools to Create, Modify and Manage 'CWB' Corpora
-Version: 0.3.5
-Date: 2022-05-13
+Version: 0.3.6
+Date: 2022-06-03
 Authors@R: c(person("Andreas", "Blaette", role = c("aut", "cre"), email = "andreas.blaette@uni-due.de"),
   person("Christoph", "Leonhardt", role = "aut", email = "christoph.leonhardt@uni-due.de")
   )
@@ -37,9 +37,9 @@ Collate: 'CorpusData.R' 'corpus.R' 'cwb.R' 'cwbtools.R' 'directories.R'
 RoxygenNote: 7.1.2
 RdMacros: lifecycle
 NeedsCompilation: no
-Packaged: 2022-05-14 19:57:40 UTC; andreasblatte
+Packaged: 2022-06-01 23:24:07 UTC; andreasblatte
 Author: Andreas Blaette [aut, cre],
   Christoph Leonhardt [aut]
 Maintainer: Andreas Blaette <andreas.blaette@uni-due.de>
 Repository: CRAN
-Date/Publication: 2022-05-14 20:10:02 UTC
+Date/Publication: 2022-06-02 11:30:06 UTC
