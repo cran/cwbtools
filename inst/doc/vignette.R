@@ -1,8 +1,6 @@
 ## ----create_tmp_dirs----------------------------------------------------------
-tmpdir <- fs::path_tidy(tempdir())
-
-registry_tmp <- fs::path(tmpdir, "registry")
-data_dir_tmp <- fs::path(tmpdir, "data_dir")
+registry_tmp <- fs::path(tempdir(), "registry")
+data_dir_tmp <- fs::path(tempdir(), "data_dir")
 
 if (!file.exists(registry_tmp)){
   dir.create (registry_tmp)
@@ -24,7 +22,7 @@ teifiles <- list.files(teidir, full.names = TRUE)
 list.files(teidir)
 
 ## ----unga_create_dirs, message = FALSE,  results = FALSE----------------------
-unga_data_dir_tmp <- file.path(data_dir_tmp, "unga")
+unga_data_dir_tmp <- fs::path(data_dir_tmp, "unga")
 if (!file.exists(unga_data_dir_tmp)) dir.create(unga_data_dir_tmp)
 file.remove(list.files(unga_data_dir_tmp, full.names = TRUE))
 
@@ -94,7 +92,7 @@ peace_context <- unname(sapply(peace_context, function(x) paste(x, collapse = " 
 head(peace_context)
 
 ## ---- message = FALSE, results = FALSE----------------------------------------
-austen_data_dir_tmp <- file.path(data_dir_tmp, "austen")
+austen_data_dir_tmp <- fs::path(data_dir_tmp, "austen")
 if (!file.exists(austen_data_dir_tmp)) dir.create(austen_data_dir_tmp)
 file.remove(list.files(austen_data_dir_tmp, full.names = TRUE))
 
@@ -165,7 +163,7 @@ reuters.tbl[["places"]] <- sapply(
 
 ## ---- results = FALSE---------------------------------------------------------
 Reuters <- CorpusData$new()
-reuters_data_dir_tmp <- file.path(data_dir_tmp, "reuters")
+reuters_data_dir_tmp <- fs::path(data_dir_tmp, "reuters")
 if (!file.exists(reuters_data_dir_tmp)) dir.create(reuters_data_dir_tmp)
 file.remove(list.files(reuters_data_dir_tmp, full.names = TRUE))
 

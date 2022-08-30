@@ -3,6 +3,7 @@
 \docType{data}
 \name{zenodo_get_tarball}
 \alias{zenodo_get_tarball}
+\alias{zenodo_get_tarballurl}
 \alias{gparlsample_url_restricted}
 \title{Download corpus tarball from Zenodo}
 \format{
@@ -17,11 +18,14 @@ zenodo_get_tarball(
   progress = TRUE
 )
 
+zenodo_get_tarballurl(url)
+
 gparlsample_url_restricted
 }
 \arguments{
 \item{url}{Landing page at Zenodo for resource. Can also be the URL for
-restricted access (?token= appended with a long key).}
+restricted access (?token= appended with a long key), or a DOI referencing
+objects deposited with Zenodo.}
 
 \item{destfile}{A \code{character} vector with the file path where the downloaded
 file is to be saved. Tilde-expansion is performed. Defaults to a temporary
@@ -38,12 +42,18 @@ download.}
 The filename of the downloaded corpus tarball, designed to serve as
 input for \code{\link{corpus_install}} (as argument \code{tarball}). If the
 resource is not available, \code{NULL} is returned.
+
+The path of the downloaded resource, or \code{NULL} if the operation has
+not been successful.
 }
 \description{
 Download corpus tarball from Zenodo. Downloading both freely available data
 and data with restricted access is supported.
 }
 \details{
+\code{zenodo_get_tarballurl} is a (temporary) helper function to
+accomplish a temporarily bugged functionality of the zen4R package.
+
 A sample subset of the GermaParl corpus is deposited at Zenodo for
 testing purposes. There are identical open access and restricted versions
 of GermaParlSample to test different flavours of downloading a resource
@@ -66,11 +76,11 @@ Sys.setenv(CORPUS_REGISTRY = cwb_dirs[["registry_dir"]])
 # Download and install open access resource
 gparl_url_pub <- "https://doi.org/10.5281/zenodo.3823245"
 tarball_tmp <- zenodo_get_tarball(url = gparl_url_pub)
-corpus_install(tarball = tarball_tmp)
+if (!is.null(tarball_tmp)) corpus_install(tarball = tarball_tmp)
 
 # Download and install resource with restricted access
 tarball_tmp <- zenodo_get_tarball(url = gparlsample_url_restricted)
-corpus_install(tarball = tarball_tmp)
+if (!is.null(tarball_tmp)) corpus_install(tarball = tarball_tmp)
 }
 }
 \keyword{datasets}
