@@ -1,8 +1,8 @@
 Package: cwbtools
 Type: Package
 Title: Tools to Create, Modify and Manage 'CWB' Corpora
-Version: 0.3.8
-Date: 2022-08-29
+Version: 0.3.9
+Date: 2023-11-20
 Authors@R: c(person("Andreas", "Blaette", role = c("aut", "cre"), email = "andreas.blaette@uni-due.de"),
   person("Christoph", "Leonhardt", role = "aut", email = "christoph.leonhardt@uni-due.de")
   )
@@ -20,8 +20,8 @@ Description: The 'Corpus Workbench' ('CWB', <https://cwb.sourceforge.io/>) offer
  to support the combination of quantitative and qualitative approaches for working
  with textual data.
 Imports: data.table, R6, xml2, stringi, curl, RcppCWB (>= 0.5.2),
-        pbapply, methods, tools, cli, jsonlite, httr, rstudioapi,
-        zen4R, lifecycle, fs
+        pbapply, methods, tools, cli, jsonlite, httr, rstudioapi, zen4R
+        (>= 0.9), lifecycle, fs
 Suggests: tm (>= 0.7.3), knitr, markdown, tokenizers (>= 0.2.1),
         tidytext, SnowballC, janeaustenr, testthat, rmarkdown, aws.s3
 VignetteBuilder: knitr
@@ -33,12 +33,12 @@ BugReports: https://github.com/PolMine/cwbtools/issues
 Collate: 'CorpusData.R' 'corpus.R' 'cwb.R' 'cwbtools.R' 'directories.R'
         'encoding.R' 'ner.R' 'p_attribute.R' 'pkg.R' 'registry_file.R'
         's_attribute.R' 'vrt.R' 'zenodo.R'
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.3
 RdMacros: lifecycle
 NeedsCompilation: no
-Packaged: 2022-08-29 17:04:52 UTC; andreasblatte
+Packaged: 2023-11-27 14:56:14 UTC; andreasblatte
 Author: Andreas Blaette [aut, cre],
   Christoph Leonhardt [aut]
 Maintainer: Andreas Blaette <andreas.blaette@uni-due.de>
 Repository: CRAN
-Date/Publication: 2022-08-30 08:10:02 UTC
+Date/Publication: 2023-11-27 15:30:05 UTC

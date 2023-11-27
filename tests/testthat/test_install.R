@@ -118,10 +118,6 @@ test_that(
   {
     skip_on_cran()
     
-    expect_null(
-      zenodo_get_tarballurl(url = "10.5281/zenodo.3823245123")
-    )
-    
     expect_false(
       corpus_install(doi = "10.5281/zenodo.3823245123", verbose = FALSE)
     )
@@ -130,14 +126,45 @@ test_that(
 
 
 test_that(
-  "check that corpus_install() aborts of md5 checksum is invalid",
+  "zenodo_get_tarball()",
+  {
+    skip_on_ci()
+    
+    old_registry <- Sys.getenv("CORPUS_REGISTRY")
+    Sys.setenv(CORPUS_REGISTRY = "")
+    
+    cwb_dirs <- cwbtools::create_cwb_directories(prefix = tempdir(), ask = FALSE, verbose = FALSE)
+    Sys.setenv(CORPUS_REGISTRY = cwb_dirs[["registry_dir"]])
+    
+    gparl_url_pub <- "https://doi.org/10.5281/zenodo.3823245"
+    tarball_tmp <- zenodo_get_tarball(url = gparl_url_pub)
+    success <- corpus_install(tarball = tarball_tmp, load = FALSE)
+    testthat::expect_true(success)
+    
+    tarball_tmp <- zenodo_get_tarball(url = gparlsample_url_restricted)
+    if (is.null(tarball_tmp)) testthat::skip_on_cran()
+    success <- corpus_install(tarball = tarball_tmp, ask = FALSE, load = FALSE)
+    testthat::expect_true(success)
+    
+    unlink(cwb_dirs[["corpus_dir"]], recursive = TRUE)
+    unlink(cwb_dirs[["registry_dir"]], recursive = TRUE)
+    Sys.setenv("CORPUS_REGISTRY" = old_registry)
+  }
+)
+
+test_that(
+  "check that corpus_install() aborts if md5 checksum is invalid",
   {
     skip_on_ci()
 
     old_registry <- Sys.getenv("CORPUS_REGISTRY")
     Sys.setenv(CORPUS_REGISTRY = "")
 
-    cwb_dirs <- cwbtools::create_cwb_directories(prefix = tempdir(), ask = FALSE, verbose = FALSE)
+    cwb_dirs <- cwbtools::create_cwb_directories(
+      prefix = tempdir(),
+      ask = FALSE,
+      verbose = FALSE
+    )
     Sys.setenv(CORPUS_REGISTRY = cwb_dirs[["registry_dir"]])
 
     if (RcppCWB::cqp_is_initialized()){
@@ -152,8 +179,13 @@ test_that(
       error = function(e) testthat::skip("Zenodo not available")
     )
     if (!exists("zenodo_record")) testthat::skip()
-    zenodo_files <- sapply(zenodo_record[["files"]], function(x) x[["links"]][["download"]])
-    tarball <- grep("^.*?_(v|)\\d+\\.\\d+\\.\\d+\\.tar\\.gz$", zenodo_files, value = TRUE)
+    zenodo_files <- sapply(zenodo_record[["files"]], function(x) x[["download"]])
+    
+    tarball <- grep(
+      "^.*?_(v|)\\d+\\.\\d+\\.\\d+\\.tar\\.gz/content$",
+      zenodo_files,
+      value = TRUE
+    )
 
     y <- corpus_install(
       tarball = tarball,
@@ -173,33 +205,6 @@ test_that(
       verbose = FALSE
     )
     expect_false(y)
-
-    unlink(cwb_dirs[["corpus_dir"]], recursive = TRUE)
-    unlink(cwb_dirs[["registry_dir"]], recursive = TRUE)
-    Sys.setenv("CORPUS_REGISTRY" = old_registry)
-  }
-)
-
-test_that(
-  "zenodo_get_tarball()",
-  {
-    skip_on_ci()
-    
-    old_registry <- Sys.getenv("CORPUS_REGISTRY")
-    Sys.setenv(CORPUS_REGISTRY = "")
-    
-    cwb_dirs <- cwbtools::create_cwb_directories(prefix = tempdir(), ask = FALSE, verbose = FALSE)
-    Sys.setenv(CORPUS_REGISTRY = cwb_dirs[["registry_dir"]])
-    
-    gparl_url_pub <- "https://doi.org/10.5281/zenodo.3823245"
-    tarball_tmp <- zenodo_get_tarball(url = gparl_url_pub)
-    success <- corpus_install(tarball = tarball_tmp, load = FALSE)
-    testthat::expect_true(success)
-
-    tarball_tmp <- zenodo_get_tarball(url = gparlsample_url_restricted)
-    if (is.null(tarball_tmp)) testthat::skip_on_cran()
-    success <- corpus_install(tarball = tarball_tmp, ask = FALSE, load = FALSE)
-    testthat::expect_true(success)
 
     unlink(cwb_dirs[["corpus_dir"]], recursive = TRUE)
     unlink(cwb_dirs[["registry_dir"]], recursive = TRUE)

@@ -157,41 +157,47 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
 
       if (verbose) cli_rule("Resolve DOI")
       if (verbose) cli_process_start("get Zenodo record referred to by DOI")
-      # tryCatch(
-      #   zenodo_record <- ZenodoManager$new()$getRecordByDOI(doi = doi),
-      #   error = function(e){
-      #     if (verbose){
-      #       cli_process_failed()
-      #     } else {
-      #       cli_alert_danger(sprintf("'no Zenodo record found for DOI '%s'", doi))
-      #     }
-      #   }
-      # )
-      # 
-      # if (!exists("zenodo_record")){
-      #   return(invisible(FALSE)) # unlikely scenario that can only result from error detected by tryCatch()
-      # } else if (is.null(zenodo_record)){
-      #   if (verbose) cli_alert_danger(sprintf("no Zenodo record found for DOI '%s'", doi))
-      #   return(invisible(FALSE))
-      # } else {
-      #   if (verbose) cli_process_done()
-      # }
-      # 
-      # zenodo_files <- sapply(zenodo_record[["files"]], function(x) x[["links"]][["download"]])
-      # tarball <- grep("^.*?_(v|)\\d+\\.\\d+\\.\\d+\\.tar\\.gz$", zenodo_files, value = TRUE)
-      # 
-      # if (length(tarball) > 1L && isTRUE(ask)){
-      #   userchoice <- utils::menu(
-      #     choices = basename(tarball),
-      #     title = "Several tarballs assumed to contain an indexed corpus are available. Which tarball shall be downloaded?"
-      #   )
-      #   tarball <- tarball[userchoice]
-      # }
+      tryCatch(
+        zenodo_record <- ZenodoManager$new()$getRecordByDOI(doi = doi),
+        error = function(e){
+          if (verbose){
+            cli_process_failed()
+          } else {
+            cli_alert_danger("'no Zenodo record found for DOI {.href {doi}}")
+          }
+        }
+      )
+
+      if (!exists("zenodo_record")){
+        # unlikely scenario that can only result from error detected by tryCatch()
+        return(invisible(FALSE)) 
+      } else if (is.null(zenodo_record)){
+        if (verbose)
+          cli_alert_danger("'no Zenodo record found for DOI {.href {doi}}")
+        return(invisible(FALSE))
+      } else {
+        if (verbose) cli_process_done()
+      }
+
+      zenodo_files <- sapply(zenodo_record[["files"]], function(x) x[["download"]])
       
-      tarball <- zenodo_get_tarballurl(url = doi)
+      tarball <- grep(
+        "^.*?_(v|)\\d+\\.\\d+\\.\\d+\\.tar\\.gz(/content|)$",
+        zenodo_files,
+        value = TRUE
+      )
+
+      if (length(tarball) > 1L && isTRUE(ask)){
+        userchoice <- utils::menu(
+          choices = basename(tarball),
+          title = "Several tarballs assumed to contain an indexed corpus are available. Which tarball shall be downloaded?"
+        )
+        tarball <- tarball[userchoice]
+      }
+      
       if (is.null(tarball)){
         if (verbose){
-          cli_alert_danger(sprintf("no Zenodo record found for DOI '%s'", doi))
+          cli_alert_danger("'no Zenodo record found for DOI {.href {doi}}")
         }
         return(invisible(FALSE))
       }
@@ -204,11 +210,7 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
         )
       )
       
-      # zenodo_file_record <- zenodo_record[["files"]][[which(zenodo_files == tarball)]]
-      
-      if (!is.null(checksum)) checksum <- names(tarball)[1]
-      tarball <- unname(tarball)
-      
+      zenodo_file_record <- zenodo_record[["files"]][[which(zenodo_files == tarball)]]
     }
   }
 
@@ -247,51 +249,52 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
     # Download corpus -------------------
     if (grepl("^http", tarball)){
       if (verbose) cat_rule("Download corpus tarball")
-      if (verbose) cli_alert_info(
-        sprintf("download corpus tarball {col_cyan('%s')}", basename(tarball))
-      )
+      if (verbose) cli_alert_info("download corpus tarball: {.href {tarball}}")
 
-      corpus_tarball <- path(cwbtools_tmpdir, basename(tarball))
+      corpus_tarball <- path(
+        cwbtools_tmpdir,
+        basename(gsub("/content$", "", tarball))
+      )
 
       if (is.null(user)){
 
         tryCatch(
           tarball_not_available <- http_error(tarball),
-          error = function(e) cli_alert_danger("could not connect to server - check internet connection")
+          error = function(e)
+            cli_alert_danger(
+              "could not connect to server - check internet connection"
+            )
         )
-        if (!exists("tarball_not_available")) return(invisible())
+        if (!exists("tarball_not_available")){
+          cli_alert_danger("corpus tarball is not available: {.href {tarball}}")
+          return(invisible())
+        }
         if (isTRUE(tarball_not_available)){
-          cli_alert_danger(sprintf("the corpus tarball is not available: '%s'", tarball))
+          cli_alert_danger("corpus tarball is not available: {.href {tarball}}")
           return(invisible(FALSE))
         }
+        
+        # An earlier version of cwbtools used download.file() on Windows which
+        # used to offer better output messages. Has improved and download.file()
+        # does not work with Zenodo
 
-        if (.Platform$OS.type == "windows"){
-          # Use download.file() because it is able to cope with murky user names / path names
-          # Progress messages are better of download.file(). However curl_download() is more
-          # robust, so we use it when download.file() has failed.
-          trystatus <- try(
-            download.file(
-              url = tarball,
-              destfile = corpus_tarball,
-              quiet = !verbose,
-              cacheOK = FALSE,
-              method = if (isTRUE(capabilities("libcurl"))) "libcurl" else getOption("download.file.method")
-            )
+        trystatus <- tryCatch(
+          curl::curl_download(
+            url = tarball,
+            destfile = corpus_tarball,
+            quiet = !verbose
           )
-          if (is(trystatus)[[1]] == "try-error"){
-            retry <- TRUE
-          } else {
-            retry <- if (trystatus == 1L) TRUE else FALSE
-          }
-          if (isTRUE(retry)) curl::curl_download(url = tarball, destfile = corpus_tarball, quiet = !verbose)
-        } else {
-          curl::curl_download(url = tarball, destfile = corpus_tarball, quiet = !verbose)
+        )
+        if (is(trystatus)[[1]] == "try-error"){
+          cli_alert_danger("download failed")
+          return(NULL)
         }
       } else {
         if (is.null(password)) stop("If user name is offered, a password needs to be specified as well.")
         if (.Platform$OS.type == "windows"){
-          # On Windows, download.file is used because curl will break if destfile includes
-          # special characters. The user and the password are passed in as follows
+          # On Windows, download.file is used because curl will break if
+          # destfile includes special characters. The user and the password are
+          # passed in as follows
           # "https://user:password@polmine.sowi.uni-due.de"
           prefix <- gsub("^(https://|http://).*?$", "\\1", tarball)
           tarball <- gsub("^(https://|http://)(.*?)$", "\\2", tarball)
@@ -302,25 +305,29 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
         } else {
           curl::curl_download(
             url = tarball, destfile = corpus_tarball,
-            handle = handle_setopt(new_handle(), userpwd = sprintf("%s:%s", user, password)),
+            handle = handle_setopt(
+              new_handle(),
+              userpwd = sprintf("%s:%s", user, password)
+            ),
             quiet = !verbose
           )
         }
       }
-      if (verbose) cli_alert_success(
-        sprintf(
-          "download corpus tarball {col_cyan('%s')} ... done", basename(tarball)
-        )
-      )
-      # if (exists("zenodo_file_record")){
-      #   if (!is.null(checksum)){
-      #     if (verbose) cli_alert_warning("argument checksum is not NULL but md5 checksum can be derived from Zenodo record - using checksum issued by Zenodo")
-      #   }
-      #   checksum <- zenodo_file_record[["checksum"]]
-      # }
+      if (verbose)
+        cli_alert_success("download corpus tarball {.href {tarball}} ... done")
+      
+      if (exists("zenodo_file_record")){
+        if (!is.null(checksum)){
+          if (verbose) 
+            cli_alert_warning(
+              "argument checksum is not NULL but md5 checksum can be derived from Zenodo record - using checksum issued by Zenodo"
+            )
+        }
+        checksum <- zenodo_file_record[["checksum"]]
+      }
       if (isFALSE(is.null(checksum))){
         if (verbose){
-          msg <- sprintf("check md5 checksum for tarball %s (expected %s)", basename(tarball), checksum)
+          msg <- "check md5 checksum for tarball {.href {tarball}} (expected: {.val {checksum}})"
           cli_process_start(msg)
         }
         corpus_tarball_checksum <- tools::md5sum(corpus_tarball)
@@ -328,23 +335,25 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
           if (verbose) cli_process_done()
         } else {
           if (verbose) cli_process_failed()
-          cli_alert_danger(
-            sprintf(
-              "md5 checksum of downloaded tarball '%s' is '%s', but Zenodo archive md5 checksum is '%s'",
-              basename(corpus_tarball), corpus_tarball_checksum, checksum
-            )
-          )
+          cli_alert_danger(text = c(
+            "md5 checksum of downloaded tarball {.path {corpus_tarball}} is ",
+            "{.val {corpus_tarball_checksum}}, but Zenodo archive md5 checksum ",
+            "is {.val {checksum}}"
+          ), wrap = TRUE)
           return(invisible(FALSE))
         }
       } else if (FALSE){
-        if (verbose) cli_alert_warning("no md5 checksum provided or available to check downloaded tarball - note that checking the integrity of downloaded data is good practice")
+        if (verbose)
+          cli_alert_warning(
+            "no md5 checksum provided or available to check downloaded tarball - note that checking the integrity of downloaded data is good practice"
+          )
       }
     } else if (grepl("^[sS]3:", tarball)){
       if (!requireNamespace("aws.s3", quietly = TRUE)){
         stop(
           "To download a corpus tarball from S3, package 'aws.s3' is required. ",
           "Package 'aws.s3' is not installed. ",
-          "Install package 'aws.s3' by calling install.packages('aws.s3') and retry."
+          "Install package 'aws.s3' by calling `install.packages('aws.s3')` and retry."
         )
       }
       if (verbose) cat_rule("Download corpus tarball from S3")
@@ -398,7 +407,7 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
 
     # The registry directory and the data directory might be within a subdirectory
     # with the same name of the tarball (or name of tarball without date)
-    subdir1 <- file_path_sans_ext(basename(tarball), compression = TRUE)
+    subdir1 <- file_path_sans_ext(basename(corpus_tarball), compression = TRUE)
     subdir2 <- gsub("^(.*?)(-|_)\\d{4}-\\d{2}-\\d{2}$", "\\1", subdir1)
 
     if (dir.exists(path(path_tidy(cwbtools_tmpdir), subdir1))){
@@ -414,21 +423,21 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
     
     # Ask user before overwriting existing corpus ----------------
     for (corpus in corpora){
-      # if (exists("zenodo_record")){
-      #   version <- zenodo_record[["metadata"]][["version"]]
-      # } else {
+      if (exists("zenodo_record")){
+        version <- zenodo_record[["metadata"]][["version"]]
+      } else {
         rf <- registry_file_parse(
           corpus = corpus,
           registry_dir = tmp_registry_dir
         )
         if ("version" %in% names(rf[["properties"]])){
           version <- rf[["properties"]][["version"]]
-        } else if (grepl("^.*?\\d+\\.\\d+\\.\\d+\\.tar\\.gz$", basename(corpus_tarball))){
-          version <- gsub("^.*?_(v|)(\\d+\\.\\d+\\.\\d+)\\.tar\\.gz$", "v\\2", basename(tarball))
+        } else if (grepl("^.*?\\d+\\.\\d+\\.\\d+\\.tar\\.gz(/content|)$", basename(corpus_tarball))){
+          version <- gsub("^.*?_(v|)(\\d+\\.\\d+\\.\\d+)\\.tar\\.gz(/content|)$", "v\\2", basename(corpus_tarball))
         } else {
           version <- "unknown"
         }
-      # }
+      }
       
       if (tolower(corpus) %in% list.files(cwb_dirs[["registry_dir"]])){
         regdata <- registry_file_parse(

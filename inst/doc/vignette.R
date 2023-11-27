@@ -54,7 +54,7 @@ UNGA
 ## -----------------------------------------------------------------------------
 UNGA$tokenstream
 
-## ---- message = FALSE---------------------------------------------------------
+## ----message = FALSE----------------------------------------------------------
 s_attrs <- c("id", "who", "state", "role", "lp", "session", "date")
 UNGA$encode(
   registry_dir = registry_tmp, data_dir = unga_data_dir_tmp,
@@ -91,7 +91,7 @@ peace_context <- split(tab[["str"]], as.factor(tab[["i"]]))
 peace_context <- unname(sapply(peace_context, function(x) paste(x, collapse = " ")))
 head(peace_context)
 
-## ---- message = FALSE, results = FALSE----------------------------------------
+## ----message = FALSE, results = FALSE-----------------------------------------
 austen_data_dir_tmp <- fs::path(data_dir_tmp, "austen")
 if (!file.exists(austen_data_dir_tmp)) dir.create(austen_data_dir_tmp)
 file.remove(list.files(austen_data_dir_tmp, full.names = TRUE))
@@ -121,7 +121,7 @@ Austen$tokenstream[, book := NULL]
 setcolorder(Austen$tokenstream, c("cpos", "word", "stem"))
 Austen$tokenstream
 
-## ---- message = FALSE---------------------------------------------------------
+## ----message = FALSE----------------------------------------------------------
 Austen$encode(
    corpus = "AUSTEN", encoding = "utf8",
    p_attributes = c("word", "stem"), s_attributes = "book",
@@ -141,7 +141,7 @@ cpos <- RcppCWB::cl_id2cpos(corpus = corpus, p_attribute = p_attr, id = id, regi
 count <- length(cpos)
 count
 
-## ---- message = FALSE, results = FALSE----------------------------------------
+## ----message = FALSE, results = FALSE-----------------------------------------
 library(tm)
 reut21578 <- system.file("texts", "crude", package = "tm")
 reuters.tm <- VCorpus(DirSource(reut21578), list(reader = readReut21578XMLasPlain))
@@ -161,7 +161,7 @@ reuters.tbl[["places"]] <- sapply(
   function(x) paste(x, collapse = "|")
   )
 
-## ---- results = FALSE---------------------------------------------------------
+## ----results = FALSE----------------------------------------------------------
 Reuters <- CorpusData$new()
 reuters_data_dir_tmp <- fs::path(data_dir_tmp, "reuters")
 if (!file.exists(reuters_data_dir_tmp)) dir.create(reuters_data_dir_tmp)
@@ -172,13 +172,13 @@ Reuters$chunktable <- data.table(reuters.tbl[, c("id", "text")])
 Reuters$metadata <- data.table(reuters.tbl[,c("id", "topics_cat", "places")])
 Reuters
 
-## ---- message = FALSE, results = FALSE----------------------------------------
+## ----message = FALSE, results = FALSE-----------------------------------------
 Reuters$tokenize()
 
 ## -----------------------------------------------------------------------------
 Reuters$tokenstream
 
-## ---- message = FALSE---------------------------------------------------------
+## ----message = FALSE----------------------------------------------------------
 Reuters$encode(
    corpus = "REUTERS", encoding = "utf8",
    p_attributes = "word", s_attributes = c("topics_cat", "places"),
@@ -187,7 +187,7 @@ Reuters$encode(
    method = "R", compress = FALSE
 )
 
-## ---- message = FALSE, results = FALSE----------------------------------------
+## ----message = FALSE, results = FALSE-----------------------------------------
 RcppCWB::cqp_reset_registry(registry = registry_tmp)
 
 ## -----------------------------------------------------------------------------
