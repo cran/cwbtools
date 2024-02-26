@@ -10,6 +10,7 @@
 \alias{corpus_recode}
 \alias{corpus_testload}
 \alias{corpus_get_version}
+\alias{corpus_reload}
 \title{Install and manage corpora.}
 \usage{
 corpus_install(
@@ -40,12 +41,18 @@ corpus_rename(
 
 corpus_remove(corpus, registry_dir, ask = interactive(), verbose = TRUE)
 
-corpus_as_tarball(corpus, registry_dir, data_dir, tarfile, verbose = TRUE)
+corpus_as_tarball(
+  corpus,
+  registry_dir,
+  data_dir = registry_file_parse(corpus, registry_dir)[["home"]],
+  tarfile,
+  verbose = TRUE
+)
 
 corpus_copy(
   corpus,
   registry_dir,
-  data_dir = NULL,
+  data_dir = registry_file_parse(corpus, registry_dir)[["home"]],
   registry_dir_new = fs::path(tempdir(), "cwb", "registry"),
   data_dir_new = fs::path(tempdir(), "cwb", "indexed_corpora", tolower(corpus)),
   remove = FALSE,
@@ -69,6 +76,8 @@ corpus_testload(
 )
 
 corpus_get_version(corpus, registry_dir = Sys.getenv("CORPUS_REGISTRY"))
+
+corpus_reload(corpus, registry_dir, verbose = TRUE)
 }
 \arguments{
 \item{pkg}{Name of a package (length-one \code{character} vector).}
@@ -125,8 +134,8 @@ password protected site.}
 
 \item{data_dir_new}{Target directory for corpus files.}
 
-\item{remove}{A \code{logical} value, whether to remove orginal files after
-having created the copy.}
+\item{remove}{A \code{logical} value, whether to remove orginal files after having
+created the copy.}
 
 \item{progress}{Logical, whether to show a progress bar.}
 
@@ -195,11 +204,11 @@ If the corpus to be installed is already available, a dialogue will ask the
 user whether an existing corpus shall be deleted and installed anew, if
 argument \code{ask} is \code{TRUE}.
 
-\code{corpus_packages} will detect the packages that include CWB
+\code{corpus_packages()} will detect the packages that include CWB
 corpora. Note that the directory structure of all installed packages is
 evaluated which may be slow on network-mounted file systems.
 
-\code{corpus_rename} will rename a corpus, affecting the name of the
+\code{corpus_rename()} will rename a corpus, affecting the name of the
 registry file, the corpus id, and the name of the directory where data
 files reside.
 
@@ -210,7 +219,7 @@ two subdirectories. The 'registry' subdirectory will host the registry file
 for the tarred corpus. The data files will be put in a subdirectory with
 the corpus name in the 'indexed_corpora' subdirectory.
 
-\code{corpus_copy} will create a copy of a corpus (useful for
+\code{corpus_copy()} will create a copy of a corpus (useful for
 experimental modifications, for instance).
 
 \code{corpus_get_version} parses the registry file and derives the
@@ -218,6 +227,10 @@ corpus version number from the corpus properties. The return value is a
 \code{numeric_version} class object. The corpus version is expected to follow
 semantic versioning (three digits, e.g. '0.8.1'). If the corpus version
 has another format or if it is not available, the return value is \code{NA}.
+
+\code{corpus_reload()} will unload a corpus if necessary and reload it.
+Useful to make new features of a corpus available after modification.
+Returns logical value \code{TRUE} if succesful, \code{FALSE} if not.
 }
 \examples{
 registry_file_new <- fs::path(tempdir(), "cwb", "registry", "reuters")

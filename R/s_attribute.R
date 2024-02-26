@@ -1,54 +1,63 @@
 #' Read, process and write data on structural attributes.
 #' 
-#' @details In addition to using CWB functionality, the \code{s_attribute_encode}
-#' function includes a pure R implementation to add or modify structural attributes
-#' of an existing CWB corpus.
+#' @details `s_attribute_encode()` implements a 'pure R' implementation to add
+#' or modify structural attributes of an existing CWB corpus.
 #' 
-#' If the corpus has been loaded/used before,
-#' a new s-attribute may not be available unless \code{RcppCWB::cl_delete_corpus}
-#' has been called. Use the argument \code{delete} for calling this function.
-#' @param values A character vector with the values of the structural attribute.
+#' If the corpus has been loaded/used before, a new s-attribute may not be
+#' available unless `RcppCWB::cl_delete_corpus()` has been called. Use the
+#' argument `delete` for calling this function.
+#' @param values A `character` vector with the values of the structural
+#'   attribute.
 #' @param data_dir The data directory where to write the files.
-#' @param s_attribute Atomic character vector, the name of the structural attribute.
-#' @param region_matrix A two-column \code{matrix} with corpus positions.
+#' @param s_attribute Name of the structural attribute, an atomic `character`
+#'   vector containing only lowercase ASCII characters (a-z), digits (0-9), -,
+#'   and _: No non-ASCII or uppercase letters allowed.
+#' @param region_matrix A two-column `matrix` with corpus positions.
 #' @param corpus A CWB corpus.
-#' @param method EWither 'R' or 'CWB'.
+#' @param method Either 'R' or 'CWB'.
 #' @param encoding Encoding of the data.
 #' @param registry_dir Path name of the registry directory.
-#' @param delete Logical, whether a call to \code{RcppCWB::cl_delete_corpus} is performed.
+#' @param delete Logical, whether to call `RcppCWB::cl_delete_corpus()`.
 #' @param verbose Logical.
 #' @export s_attribute_encode
 #' @importFrom RcppCWB cl_delete_corpus
-#' @seealso To decode a structural attribute, see \code{\link[RcppCWB]{s_attribute_decode}}.
+#' @seealso To decode a structural attribute, see
+#'   \code{\link[RcppCWB]{s_attribute_decode}}.
 #' @examples
 #' require("RcppCWB")
 #' registry_tmp <- fs::path(tempdir(), "cwb", "registry")
 #' data_dir_tmp <- fs::path(tempdir(), "cwb", "indexed_corpora", "reuters")
 #' 
+#' cwb_dir_rcppcwb <- system.file(package = "RcppCWB", "extdata", "cwb")
+#' registry_dir_rcppcwb <- fs::path(cwb_dir_rcppcwb, "registry")
+#' data_dir_rcppcwb <- fs::path(cwb_dir_rcppcwb,"indexed_corpora", "reuters")
+#' 
 #' corpus_copy(
 #'   corpus = "REUTERS",
-#'   registry_dir = system.file(package = "RcppCWB", "extdata", "cwb", "registry"),
-#'   data_dir = system.file(package = "RcppCWB", "extdata", "cwb", "indexed_corpora", "reuters"),
+#'   registry_dir = registry_dir_rcppcwb,
+#'   data_dir = data_dir_rcppcwb,
 #'   registry_dir_new = registry_tmp,
 #'   data_dir_new = data_dir_tmp
 #' )
 #' 
 #' no_strucs <- cl_attribute_size(
 #'   corpus = "REUTERS",
-#'   attribute = "id", attribute_type = "s",
+#'   attribute = "id",
+#'   attribute_type = "s",
 #'   registry = registry_tmp
 #' )
-#' cpos_list <- lapply(
-#'   0L:(no_strucs - 1L),
-#'   function(i)
-#'     cl_struc2cpos(corpus = "REUTERS", struc = i, s_attribute = "id", registry = registry_tmp)
+#' 
+#' cpos_matrix <- get_region_matrix(
+#'       corpus = "REUTERS",
+#'       struc = 0L:(no_strucs - 1L),
+#'       s_attribute = "id",
+#'       registry = registry_tmp
 #' )
-#' cpos_matrix <- do.call(rbind, cpos_list)
 #' 
 #' s_attribute_encode(
-#'   values = as.character(1L:nrow(cpos_matrix)),
+#'   values = 1L:nrow(cpos_matrix),
 #'   data_dir = data_dir_tmp,
-#'   s_attribute = "foo",
+#'   s_attribute = "article_id",
 #'   corpus = "REUTERS",
 #'   region_matrix = cpos_matrix,
 #'   method = "R",
@@ -59,13 +68,52 @@
 #' )
 #' 
 #' cl_struc2str(
-#'   "REUTERS", struc = 0L:(nrow(cpos_matrix) - 1L), s_attribute = "foo", registry = registry_tmp
+#'   "REUTERS",
+#'   struc = 0L:(nrow(cpos_matrix) - 1L),
+#'   s_attribute = "article_id",
+#'   registry = registry_tmp
 #' )
 #' 
 #' unlink(registry_tmp, recursive = TRUE)
 #' unlink(data_dir_tmp, recursive = TRUE)
 #' @rdname s_attribute
-s_attribute_encode <- function(values, data_dir, s_attribute, corpus, region_matrix, method = c("R", "CWB"), registry_dir = Sys.getenv("CORPUS_REGISTRY"), encoding, delete = FALSE, verbose = TRUE){
+s_attribute_encode <- function(
+    values,
+    data_dir,
+    s_attribute,
+    corpus,
+    region_matrix,
+    method = c("R", "CWB"),
+    registry_dir = Sys.getenv("CORPUS_REGISTRY"),
+    encoding,
+    delete = FALSE,
+    verbose = TRUE
+  ){
+  
+  if (!is.character(values)){
+    if (verbose)
+      cli_alert_warning(
+        "class of input {.arg values} is {.val {typeof(values)}}"
+      )
+    values <- as.character(values)
+    values_n <- length(unique(values))
+    if (verbose){
+      cli_alert_info(
+        "unique values after coercion to `character` vector: {.val {values_n}}"
+      )
+    }
+  }
+  
+  stopifnot(is.character(s_attribute), length(s_attribute) == 1L)
+  if (isFALSE(.check_attribute_name(s_attribute))) return(FALSE)
+  # See https://github.com/PolMine/cwbtools/issues/69
+  if (.Platform$OS.type == "windows" & s_attribute == "id")
+    cli_alert_warning(paste0(c(
+      "s-attribute name 'id' may cause errors on Windows: ",
+      "Rename s-attribute to avoid issues with reserved filename ",
+      "{.path id.rng}!"
+    )))
+  
   stopifnot(
     inherits(region_matrix, "matrix"),
     ncol(region_matrix) == 2L,
@@ -76,19 +124,46 @@ s_attribute_encode <- function(values, data_dir, s_attribute, corpus, region_mat
     length(verbose) == 1L,
     is.logical(verbose)
   )
+  
   if (!inherits(as.vector(region_matrix), "integer")){
-    region_matrix <- matrix(data = as.integer(as.vector(region_matrix)), ncol = 2)
+    region_matrix <- matrix(
+      data = as.integer(as.vector(region_matrix)),
+      ncol = 2
+    )
   }
+  
+  # ensure order
+  sortvec <- order(region_matrix[,1])
+  if (!identical(sortvec, 1L:nrow(region_matrix))){
+    cli_alert_info("regions and values reordered (input regions not yet sorted)")
+    values <- values[sortvec]
+    m <- region_matrix[sortvec,] 
+  } else {
+    m <- region_matrix
+  }
+  
+  if (!all(m[2:nrow(m), 1] - m[1:(nrow(m) - 1), 2] >= 1)){
+    stop("overlapping regions are not permitted")
+  }
+
   if (method == "R"){
-    avs_file <- fs::path(data_dir, paste(s_attribute, "avs", sep = ".")) # attribute values
-    avx_file <- fs::path(data_dir, paste(s_attribute, "avx", sep = ".")) # attribute value index
-    rng_file <- fs::path(data_dir, paste(s_attribute, "rng", sep = ".")) # ranges
+    # attribute values
+    avs_file <- fs::path(data_dir, paste(s_attribute, "avs", sep = "."))
+    # attribute value index
+    avx_file <- fs::path(data_dir, paste(s_attribute, "avx", sep = "."))
+    # ranges (filename id.rng not working on Windows)
+    rng_file <- fs::path(data_dir, paste(s_attribute, "rng", sep = "."))
     
     # generate and write attrib.avs
     if (!is.character(values)) values <- as.character(values)
     values_unique <- unique(values)
     if (encoding == "latin1"){
-      values_hex_list <- iconv(x = values_unique, from = "UTF-8", to = toupper(encoding), toRaw = TRUE)
+      values_hex_list <- iconv(
+        x = values_unique,
+        from = "UTF-8",
+        to = toupper(encoding),
+        toRaw = TRUE
+      )
     } else {
       values_hex_list <- lapply(values_unique, charToRaw)
     }
@@ -107,41 +182,68 @@ s_attribute_encode <- function(values, data_dir, s_attribute, corpus, region_mat
     writeBin(object = avx_vector, con = avx_file, size = 4L, endian = "big")
     
     # generate and write attrib.rng
-    region_vector <- as.vector(t(region_matrix))
+    region_vector <- as.vector(t(m))
     writeBin(object = region_vector, con = rng_file, size = 4L, endian = "big")
   } else if (method == "CWB"){
     
-    tab <- data.table(region_matrix, s_attribute = values)
+    tab <- data.table(m, s_attribute = values)
     setorderv(tab, cols = "cpos_left", order = 1L)
     
     # adjust encoding, if necessary
     input_enc <- get_encoding(as.character(tab[["s_attribute"]]))
     if (input_enc != encoding){
-      tab[["s_attribute"]] <- iconv(tab[["s_attribute"]], from = input_enc, to = encoding)
+      tab[["s_attribute"]] <- iconv(
+        tab[["s_attribute"]],
+        from = input_enc,
+        to = encoding
+      )
       Encoding(tab[["s_attribute"]]) <- encoding
     }
     
     tmp_file <- tempfile()
-    data.table::fwrite(x = tab, file = tmp_file, quote = FALSE, sep = "\t", col.names = FALSE)
+    data.table::fwrite(
+      x = tab,
+      file = tmp_file,
+      quote = FALSE,
+      sep = "\t",
+      col.names = FALSE
+    )
     
-    if (verbose) message(sprintf("... running 'cwb-s-encode' to add structural annotation for attribute '%s'", s_attribute))
+    if (verbose){
+      cli_alert_info(
+        "run 'cwb-s-encode' to add structural attribute {.val {s_attribute}}"
+      )
+    }
+    
     cmd <- c(
       fs::path(cwb_get_bindir(), "cwb-s-encode"),
       "-d", data_dir,
       "-f", tmp_file,
+      "-c", encoding,
       "-V", s_attribute
     )
     
     system(paste(cmd, collapse = " "))
     
   }
-  regdata <- registry_file_parse(tolower(corpus), registry_dir = registry_dir)
+  regdata <- registry_file_parse(
+    tolower(corpus),
+    registry_dir = registry_dir
+  )
+  
   if (!s_attribute %in% regdata[["s_attributes"]]){
-    if (verbose) message(sprintf("... adding s-attribute '%s' to registry", s_attribute))
+    if (verbose)
+      cli_alert_info("add s-attribute {.val {s_attribute}} to registry")
     regdata[["s_attributes"]] <- c(regdata[["s_attributes"]], s_attribute)
-    registry_file_write(regdata, corpus = tolower(corpus), registry_dir = registry_dir)
+    registry_file_write(
+      regdata,
+      corpus = tolower(corpus),
+      registry_dir = registry_dir
+    )
   }
-  if (delete) cl_delete_corpus(corpus = toupper(corpus), registry = registry_dir)
+  if (delete)
+    cl_delete_corpus(corpus = toupper(corpus), registry = registry_dir)
+  
   invisible( NULL )
 }
 
@@ -157,7 +259,10 @@ s_attribute_encode <- function(values, data_dir, s_attribute, corpus, region_mat
 #' @rdname s_attribute
 s_attribute_recode <- function(data_dir, s_attribute, from = c("UTF-8", "latin1"), to = c("UTF-8", "latin1")){
   
-  s_attr_files <- s_attribute_files(data_dir = data_dir, s_attribute = s_attribute)
+  s_attr_files <- s_attribute_files(
+    data_dir = data_dir,
+    s_attribute = s_attribute
+  )
   
   # read, recode and write values of s-attribute
   
@@ -201,9 +306,9 @@ s_attribute_recode <- function(data_dir, s_attribute, from = c("UTF-8", "latin1"
 }
 
 
-#' @details \code{s_attribute_files} will return a named character vector with
+#' @details `s_attribute_files()` will return a named character vector with
 #'   the data files (extensions: "avs", "avx", "rng") in the directory indicated
-#'   by \code{data_dir} for the structural attribute \code{s_attribute}.
+#'   by `data_dir` for the structural attribute `s_attribute`.
 #' @export s_attribute_files
 #' @rdname s_attribute
 s_attribute_files <- function(s_attribute, data_dir){
@@ -214,16 +319,20 @@ s_attribute_files <- function(s_attribute, data_dir){
 }
 
 
-#' @details \code{s_attribute_get_values} is equivalent to performing the CL
+#' @details `s_attribute_get_values()` is equivalent to performing the CL
 #'   function cl_struc2id for all strucs of a structural attribute. It is a
 #'   "pure R" operation that is faster than using CL, as it processes entire
-#'   files for the s-attribute directly. The return value is a \code{character}
+#'   files for the s-attribute directly. The return value is a `character`
 #'   vector with all string values for the s-attribute.
 #' @examples
-#' avs <- s_attribute_get_values(
-#'   s_attribute = "id",
-#'   data_dir = system.file(package = "RcppCWB", "extdata", "cwb", "indexed_corpora", "reuters")
+#' data_dir <- system.file(
+#'   package = "RcppCWB",
+#'   "extdata",
+#'   "cwb",
+#'   "indexed_corpora",
+#'   "reuters"
 #' )
+#' avs <- s_attribute_get_values(s_attribute = "id", data_dir = data_dir)
 #' @export s_attribute_get_values
 #' @rdname s_attribute
 s_attribute_get_values <- function(s_attribute, data_dir){
@@ -265,21 +374,21 @@ s_attribute_get_regions <- function(s_attribute, data_dir){
 }
 
 
-#' @details \code{s_attribute_merge} combines two tables with regions for
+#' @details `s_attribute_merge()` combines two tables with regions for
 #'   s-attributes checking for intersections that may cause problems. The
 #'   heuristic is to keep all non-intersecting annotations and those annotations
-#'   that define the same region in object \code{x} and object \code{y}.
-#'   Annotations of \code{x} and \code{y} which overlap uncleanly, i.e. without
+#'   that define the same region in object `x` and object `y`.
+#'   Annotations of `x` and `y` which overlap uncleanly, i.e. without
 #'   an identity of the left and the right corpus position ("cpos_left" /
 #'   "cpos_right") are dropped. The scenario for using the function is to decode
-#'   a s-attribute (using \code{s_attribute_decode}), mix in an additional
+#'   a s-attribute (using `s_attribute_decode()`), mix in an additional
 #'   annotation, and to re-encode the enhanced s-attribute (using
-#'   \code{s_attribute_encode}).
-#' @param x Data defining a first s-attribute, a \code{data.table} (or an object
-#'   coercible to a \code{data.table}) with three columns ("cpos_left",
+#'   `s_attribute_encode()`).
+#' @param x Data defining a first s-attribute, a `data.table` (or an object
+#'   coercible to a `data.table`) with three columns ("cpos_left",
 #'   "cpos_right", "value").
-#' @param y Data defining a second s-attribute, a \code{data.table} (or an
-#'   object coercible to a \code{data.table})with three columns ("cpos_left",
+#' @param y Data defining a second s-attribute, a `data.table` (or an
+#'   object coercible to a `data.table`) with three columns ("cpos_left",
 #'   "cpos_right", "value").
 #' @export s_attribute_merge 
 #' @examples
@@ -331,15 +440,15 @@ s_attribute_merge <- function(x, y){
 }
 
 
-#' @details Function \code{s_attribute_delete} is not yet implemented.
+#' @details Function `s_attribute_delete()` is not yet implemented.
 #' @export s_attribute_delete
 #' @rdname s_attribute
 s_attribute_delete <- function(corpus, s_attribute){
   stop("function 's_attribute_delete' is not yet implemented")
 }
 
-#' @details Function \code{s_attribute_rename} can be used to rename a
-#'   structural attribute.
+#' @details Function `s_attribute_rename()` can be used to rename a structural
+#'   attribute.
 #' @param old A `character` vector with s-attributes to be renamed.
 #' @param new A `character` vector with new names of s-attributes. The vector
 #'   needs to have the same length as vector `old`. The 1st, 2nd, 3rd ... nth

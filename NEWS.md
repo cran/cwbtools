@@ -1,3 +1,37 @@
+cwbtools 0.3.9.9005-9008
+===================
+* `corpus_remove()` returns `FALSE` (rather than failing with ERROR) when corpus
+does not exist. More telling messages.
+* `p_attribute_encode()` has new argument `quietly` passed into RcppCWB functions
+`cwb_compress()` `cwb_huffcode()` and `cwb_compress_rdx()` to control verbosity.
+* Method `$encode()` of `CorpusData` class has new argument `quietly` passed into
+`p_attribute_encode()`.
+* Method `$encode()` has new argument `reload` to trigger unloading and reloading
+corpus, to make s-attributes available #57.
+* The `CorpusData$encode()` method uses messages from the cli package #59.
+* Outdated documentation of `p_attribute_encode()` rewritten, including explanation
+of argument `compress` and simplification of sample code #61.
+* Corrected inconsistencies in the vignette #55.
+* `s_attribute_encode()` coerces input `values` to `character` (rather than failing) #62.
+* The validity of attribute names is checked by `s_attribute_encode()`, 
+`p_attribute_encode()` and `CorpusData$encode()` using a new (internal)
+function, a telling message is issued if non-ASCII or uppercase characters are
+used. The documentation has been augmented accordingly #48.
+* For method "R", `p_attribute_encode()` checks whether files for encoded p-attribute
+exist and fails gracefully with telling error message if yes #4.
+* Scenario how to add stemmed token stream to existing corpus added to vignette #14.
+* New method `encode()` to prospectively supersed `CorpusData` class. Includes argument `properties` #13.
+* `s_attribute_encode()` issues warning on Windows when using s-attribute 'id' #69.
+* Replaced `normalizePath()` by `fs::path()` in `p_attribute_encode()` #65.
+* `cwb_get_bindir()` tries to find `cwb-config` system utility, if it is on the path.
+* `cwb_get_url()` will get CWB v3.5 installation files #63.
+* Argument `compress` defaults to `FALSE` as corpus compression is not stable on Windows #3.
+* New function `corpus_reload()` for convenient unloading/reloading corpora #68.
+* Simplifications of the vignette #60.
+* function `corpus_as_tarball()` and `corpus_copy()` now have `registry_file_parse(corpus, registry_dir)[["home"]]` as default value, so that values are more consistent across `corpus_*` functions #18.
+* New utility function `registry_set_name()` #13.
+
+
 cwbtools 0.3.9
 ==============
 

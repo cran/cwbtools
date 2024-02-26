@@ -9,12 +9,76 @@ if (!file.exists(registry_tmp)){
 }
 if (!file.exists(data_dir_tmp)) dir.create(data_dir_tmp)
 
-regdir_envvar <- Sys.getenv("CORPUS_REGISTRY")
-Sys.setenv(CORPUS_REGISTRY = registry_tmp)
-
 ## ----load_pkgs----------------------------------------------------------------
 library(cwbtools)
 library(data.table)
+
+## ----message = FALSE, results = FALSE-----------------------------------------
+austen_data_dir_tmp <- fs::path(data_dir_tmp, "austen")
+
+if (!file.exists(austen_data_dir_tmp)) dir.create(austen_data_dir_tmp)
+file.remove(list.files(austen_data_dir_tmp, full.names = TRUE))
+
+## -----------------------------------------------------------------------------
+Austen <- CorpusData$new()
+
+## -----------------------------------------------------------------------------
+tbl <- tidytext::unnest_tokens(
+  janeaustenr::austen_books(),
+  word, text, to_lower = FALSE
+)
+
+Austen$tokenstream <- as.data.table(tbl)
+
+## -----------------------------------------------------------------------------
+Austen$tokenstream[, stem := SnowballC::wordStem(Austen$tokenstream[["word"]], language = "english")]
+
+## -----------------------------------------------------------------------------
+Austen$tokenstream[, cpos := 0L:(nrow(tbl) - 1L)]
+
+## -----------------------------------------------------------------------------
+cpos_max_min <- function(x)
+  list(cpos_left = min(x[["cpos"]]), cpos_right = max(x[["cpos"]]))
+Austen$metadata <- Austen$tokenstream[, cpos_max_min(.SD), by = book]
+Austen$metadata[, book := as.character(book)]
+setcolorder(Austen$metadata, c("cpos_left", "cpos_right", "book"))
+
+head(Austen$tokenstream)
+
+## -----------------------------------------------------------------------------
+Austen$tokenstream[, book := NULL]
+setcolorder(Austen$tokenstream, c("cpos", "word", "stem"))
+Austen$tokenstream
+
+## ----message = FALSE----------------------------------------------------------
+Austen$encode(
+   corpus = "AUSTEN",
+   encoding = "utf8",
+   p_attributes = c("word", "stem"),
+   s_attributes = "book",
+   registry_dir = registry_tmp,
+   data_dir = austen_data_dir_tmp,
+   method = "R",
+   compress = FALSE,
+   reload = TRUE
+)
+
+## -----------------------------------------------------------------------------
+ids <- RcppCWB::cl_str2id(
+  corpus = "AUSTEN",
+  p_attribute = "word",
+  str = "pride",
+  registry = registry_tmp
+)
+
+cpos <- RcppCWB::cl_id2cpos(
+  corpus = "AUSTEN",
+  p_attribute = "word",
+  id = ids,
+  registry = registry_tmp
+)
+
+length(cpos)
 
 ## ----get_unga_teifiles--------------------------------------------------------
 teidir <- system.file(package = "cwbtools", "xml", "UNGA")
@@ -32,9 +96,11 @@ UNGA
 
 ## ----basetable, eval = TRUE---------------------------------------------------
 metadata <- c(
-  lp = "//legislativePeriod", session = "//titleStmt/sessionNo",
-  date = "//publicationStmt/date", url = "//sourceDesc/url",
-  src = "//sourceDesc/filetype"
+  doc_lp = "//legislativePeriod",
+  doc_session = "//titleStmt/sessionNo",
+  doc_date = "//publicationStmt/date",
+  doc_url = "//sourceDesc/url",
+  doc_src = "//sourceDesc/filetype"
 )
 UNGA$import_xml(filenames = teifiles, meta = metadata)
 UNGA
@@ -44,9 +110,6 @@ to_keep <- which(is.na(UNGA$metadata[["speaker"]]))
 UNGA$chunktable <- UNGA$chunktable[to_keep]
 UNGA$metadata <- UNGA$metadata[to_keep][, speaker := NULL]
 
-## ----unga_expressive_colnames-------------------------------------------------
-setnames(UNGA$metadata, old = c("sp_who", "sp_state", "sp_role"), new = c("who", "state", "role"))
-
 ## ----dissect, eval = TRUE, message = FALSE, results = FALSE-------------------
 UNGA$tokenize(lowercase = FALSE, strip_punct = FALSE)
 UNGA
@@ -55,23 +118,32 @@ UNGA
 UNGA$tokenstream
 
 ## ----message = FALSE----------------------------------------------------------
-s_attrs <- c("id", "who", "state", "role", "lp", "session", "date")
 UNGA$encode(
-  registry_dir = registry_tmp, data_dir = unga_data_dir_tmp,
-  corpus = "UNGA", encoding = "utf8", method = "R",
-  p_attributes = "word", s_attributes = character(),
+  registry_dir = registry_tmp,
+  data_dir = unga_data_dir_tmp,
+  corpus = "UNGA",
+  encoding = "utf8",
+  method = "R",
+  p_attributes = "word",
+  s_attributes = c(
+    "doc_lp", "doc_session", "doc_date",
+    "sp_who", "sp_state", "sp_role"
+  ),
   compress = FALSE
-  )
+)
 
 ## -----------------------------------------------------------------------------
-RcppCWB::cqp_initialize()
 id_peace <- RcppCWB::cl_str2id(
-  corpus = "UNGA", p_attribute = "word",
-  str = "peace", registry = registry_tmp
+  corpus = "UNGA",
+  p_attribute = "word",
+  str = "peace",
+  registry = registry_tmp
 )
 cpos_peace <- RcppCWB::cl_id2cpos(
-  corpus = "UNGA", p_attribute = "word",
-  id = id_peace, registry = registry_tmp
+  corpus = "UNGA",
+  p_attribute = "word",
+  id = id_peace,
+  registry = registry_tmp
 )
 
 tab <- data.frame(
@@ -92,59 +164,12 @@ peace_context <- unname(sapply(peace_context, function(x) paste(x, collapse = " 
 head(peace_context)
 
 ## ----message = FALSE, results = FALSE-----------------------------------------
-austen_data_dir_tmp <- fs::path(data_dir_tmp, "austen")
-if (!file.exists(austen_data_dir_tmp)) dir.create(austen_data_dir_tmp)
-file.remove(list.files(austen_data_dir_tmp, full.names = TRUE))
-
-## -----------------------------------------------------------------------------
-Austen <- CorpusData$new()
-
-## -----------------------------------------------------------------------------
-books <- janeaustenr::austen_books()
-tbl <- tidytext::unnest_tokens(books, word, text, to_lower = FALSE)
-Austen$tokenstream <- as.data.table(tbl)
-
-## -----------------------------------------------------------------------------
-Austen$tokenstream[, stem := SnowballC::wordStem(tbl[["word"]], language = "english")]
-
-## -----------------------------------------------------------------------------
-Austen$tokenstream[, cpos := 0L:(nrow(tbl) - 1L)]
-
-## -----------------------------------------------------------------------------
-cpos_max_min <- function(x) list(cpos_left = min(x[["cpos"]]), cpos_right = max(x[["cpos"]]))
-Austen$metadata <- Austen$tokenstream[, cpos_max_min(.SD), by = book]
-Austen$metadata[, book := as.character(book)]
-setcolorder(Austen$metadata, c("cpos_left", "cpos_right", "book"))
-
-## -----------------------------------------------------------------------------
-Austen$tokenstream[, book := NULL]
-setcolorder(Austen$tokenstream, c("cpos", "word", "stem"))
-Austen$tokenstream
-
-## ----message = FALSE----------------------------------------------------------
-Austen$encode(
-   corpus = "AUSTEN", encoding = "utf8",
-   p_attributes = c("word", "stem"), s_attributes = "book",
-   registry_dir = registry_tmp, data_dir = austen_data_dir_tmp,
-   method = "R", compress = FALSE
-)
-
-## -----------------------------------------------------------------------------
-RcppCWB::cqp_reset_registry(registry = registry_tmp)
-
-## -----------------------------------------------------------------------------
-corpus <- "AUSTEN"
-token <- "pride"
-p_attr <- "word"
-id <- RcppCWB::cl_str2id(corpus = corpus, p_attribute = p_attr, str = token, registry = registry_tmp)
-cpos <- RcppCWB::cl_id2cpos(corpus = corpus, p_attribute = p_attr, id = id, registry = registry_tmp)
-count <- length(cpos)
-count
-
-## ----message = FALSE, results = FALSE-----------------------------------------
 library(tm)
 reut21578 <- system.file("texts", "crude", package = "tm")
-reuters.tm <- VCorpus(DirSource(reut21578), list(reader = readReut21578XMLasPlain))
+reuters.tm <- VCorpus(
+  DirSource(reut21578),
+  list(reader = readReut21578XMLasPlain)
+)
 
 ## -----------------------------------------------------------------------------
 library(tidytext)
@@ -152,14 +177,11 @@ reuters.tbl <- tidy(reuters.tm)
 reuters.tbl
 
 ## -----------------------------------------------------------------------------
-reuters.tbl[["topics_cat"]] <- sapply(
-  reuters.tbl[["topics_cat"]],
-  function(x) paste(x, collapse = "|")
-  )
-reuters.tbl[["places"]] <- sapply(
-  reuters.tbl[["places"]],
-  function(x) paste(x, collapse = "|")
-  )
+topics <- sapply(reuters.tbl[["topics_cat"]], paste, collapse = "|")
+places <- sapply(reuters.tbl[["places"]], paste, collapse = "|")
+
+reuters.tbl[["topics"]] <- topics
+reuters.tbl[["places"]] <- places
 
 ## ----results = FALSE----------------------------------------------------------
 Reuters <- CorpusData$new()
@@ -169,7 +191,7 @@ file.remove(list.files(reuters_data_dir_tmp, full.names = TRUE))
 
 ## -----------------------------------------------------------------------------
 Reuters$chunktable <- data.table(reuters.tbl[, c("id", "text")])
-Reuters$metadata <- data.table(reuters.tbl[,c("id", "topics_cat", "places")])
+Reuters$metadata <- data.table(reuters.tbl[,c("id", "topics", "places")])
 Reuters
 
 ## ----message = FALSE, results = FALSE-----------------------------------------
@@ -180,25 +202,73 @@ Reuters$tokenstream
 
 ## ----message = FALSE----------------------------------------------------------
 Reuters$encode(
-   corpus = "REUTERS", encoding = "utf8",
-   p_attributes = "word", s_attributes = c("topics_cat", "places"),
+   corpus = "REUTERS",
+   encoding = "utf8",
+   p_attributes = "word",
+   s_attributes = c("topics", "places"),
    registry_dir = registry_tmp,
-   data_dir = data_dir_tmp,
-   method = "R", compress = FALSE
+   data_dir = reuters_data_dir_tmp,
+   method = "R",
+   compress = FALSE
 )
 
-## ----message = FALSE, results = FALSE-----------------------------------------
-RcppCWB::cqp_reset_registry(registry = registry_tmp)
+## -----------------------------------------------------------------------------
+ids <- RcppCWB::cl_str2id(
+  corpus = "REUTERS",
+  p_attribute = "word",
+  str = "oil",
+  registry = registry_tmp
+)
+
+cpos <- RcppCWB::cl_id2cpos(
+  corpus = "REUTERS",
+  p_attribute = "word",
+  id = ids,
+  registry = registry_tmp
+)
+
+length(cpos)
 
 ## -----------------------------------------------------------------------------
-id <- RcppCWB::cl_str2id(corpus = "REUTERS", p_attribute = "word", str = "oil", registry = registry_tmp)
-cpos <- RcppCWB::cl_id2cpos(corpus = "REUTERS", p_attribute = "word", id = id, registry = registry_tmp)
-count <- length(cpos)
-count
+reuters_size <- RcppCWB::attribute_size(
+  corpus = "REUTERS",
+  registry = registry_tmp,
+  attribute = "word",
+  attribute_type = "p"
+)
+
+ids <- RcppCWB::cl_cpos2id(
+  corpus = "REUTERS",
+  registry = registry_tmp,
+  p_attribute = "word",
+  cpos = 0L:(reuters_size - 1L)
+)
+
+token_stream <- RcppCWB::cl_id2str(
+  corpus = "REUTERS",
+  registry = registry_tmp,
+  p_attribute = "word",
+  id = ids
+)
+
+## -----------------------------------------------------------------------------
+stemmed <- SnowballC::wordStem(token_stream, language = "en")
+
+## -----------------------------------------------------------------------------
+p_attribute_encode(
+  token_stream = stemmed,
+  p_attribute = "stem",
+  encoding = "utf8",
+  corpus = "REUTERS",
+  registry_dir = registry_tmp,
+  data_dir = reuters_data_dir_tmp,
+  method = "R",
+  verbose = TRUE,
+  quietly = TRUE,
+  compress = FALSE
+)
 
 ## -----------------------------------------------------------------------------
 unlink(registry_tmp, recursive = TRUE)
 unlink(data_dir_tmp, recursive = TRUE)
-
-Sys.setenv(CORPUS_REGISTRY = regdir_envvar)
 

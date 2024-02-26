@@ -5,7 +5,7 @@
 \alias{cwb_get_url}
 \alias{cwb_get_bindir}
 \alias{cwb_is_installed}
-\title{Utilities to install Corpus Workbench.}
+\title{Utilities to install the Corpus Workbench (CWB)}
 \usage{
 cwb_install(
   url_cwb = cwb_get_url(),
@@ -16,7 +16,7 @@ cwb_install(
 
 cwb_get_url()
 
-cwb_get_bindir(bindir = Sys.getenv("CWB_BINDIR"))
+cwb_get_bindir(bindir = Sys.getenv("CWB_BINDIR"), verbose = TRUE)
 
 cwb_is_installed()
 }
@@ -27,30 +27,29 @@ cwb_is_installed()
 
 \item{cwb_dir}{The directory where the CWB shall be installed.}
 
-\item{verbose}{A \code{logical} value, whether to output messages.}
+\item{verbose}{Logical, whether to show progress messages.}
 
 \item{bindir}{The directory with CWB binaries.}
 }
-\value{
-The path of the CWB binaries or \code{NULL} if downloading and installing
-the CWB has failed.
-}
 \description{
-Some steps for encoding corpora can be performed by calling CWB utilities
-from the command line, which requires an installation of the CWB, either as
-part of the CWB package, or using the default installation location of the
-CWB.
+The CWB comprises a set of command line tools for corpus preparation and
+management. Functionality for installing and managing these Tools.
 }
 \details{
-\code{cwb_get_url} will return the URL for downloading the
-appropriate binary (Linux / macOS) of the Corpus Workbench, or the source
-tarball (Linux). The md5 checksum of the file to be downloaded is part of
-the return value as "md5" attribute.
+Use \code{cwb_install()} to download and install CWB binaries (v3.5) from
+\href{https://cwb.sourceforge.io/}{SourceForge}. If successful, \code{cwb_install()}
+returns the directory of the CWB, otherwiese \code{NULL}. For the installation
+on macOS and Linux, see \url{https://cwb.sourceforge.io/install.php}.
 
-\code{cwb_get_bindir} will return the directory where the cwb
-utility programs reside. If \code{cwb_install()} has been used to install
-the CWB, the function returns the directory within the \code{cwbtools}
-package. Alternatively, a check for a local installation is performed.
+\code{cwb_get_url()} will return the URL for downloading the appropriate
+binary (Linux / macOS) of the CWB (v3.5), or the source tarball
+(Linux). The md5 checksum of the file to be downloaded is part of the
+return value as "md5" attribute.
 
-\code{cwb_is_installed} will check whether the CWB is installed.
+\code{cwb_get_bindir()} detects the directory with the cwb command line
+programs. Defaults to using the value of the environment
+variable "CWB_BINDIR". If unset, the value of \code{cwb-config --bindir} is
+used. Returns \code{NULL} if CWB installation is not found.
+
+\code{cwb_is_installed()} will check whether the CWB is installed.
 }

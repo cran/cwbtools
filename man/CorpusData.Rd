@@ -8,6 +8,16 @@ Manage Corpus Data and Encode CWB Corpus.
 
 Manage Corpus Data and Encode CWB Corpus.
 }
+\details{
+See the \href{https://cwb.sourceforge.io/files/CWB_Encoding_Tutorial.pdf}{CWB Encoding Tutorial} on
+characters allowed for encoding attributes: "By convention, all attribute
+names must be lowercase (more precisely, they may only contain the characters
+a-z, 0-9, -, and _, and may not start with a digit). Therefore, the names of
+XML elements to be included in the CWB corpus must not contain any non-ASCII
+or uppercase letters." (section 2)
+
+Import XML files.
+}
 \examples{
 library(RcppCWB)
 library(data.table)
@@ -64,8 +74,6 @@ file.remove(registry_tmp)
 
 # create temporary directories (registry directory and one for indexed corpora)
 
-tmpdir <- normalizePath(tempdir(), winslash = "/")
-if (.Platform$OS.type == "windows") tmpdir <- normalizePath(tmpdir, winslash = "/")
 registry_tmp <- fs::path(tempdir(), "registry")
 data_dir_tmp <- fs::path(tempdir(), "data_dir")
 if (!dir.exists(registry_tmp)) dir.create(registry_tmp)
@@ -90,12 +98,13 @@ cl_cpos2id(corpus = "REUTERS", p_attribute = "word", cpos = 0L:4049L, registry =
 \item{\code{chunktable}}{A \code{data.table} with column "id" (unique values),
 columns with metadata, and a column with text chunks.}
 
-\item{\code{tokenstream}}{A \code{data.table} with a column "cpos" (corpus position), and columns
-with positional attributes, such as "word", "lemma", "pos", "stem".}
+\item{\code{tokenstream}}{A \code{data.table} with a column "cpos" (corpus position), and
+columns with positional attributes, such as "word", "lemma", "pos", "stem".}
 
-\item{\code{metadata}}{A \code{data.table} with a column "id", to link data with chunks/tokenstream,
-columns with document-level metadata, and a column "cpos_left" and "cpos_right", which can
-be generated using method \code{$add_corpus_positions()}.}
+\item{\code{metadata}}{A \code{data.table} with a column "id", to link data with
+chunks/tokenstream, columns with document-level metadata, and a column
+"cpos_left" and "cpos_right", which can be generated using method
+\verb{$add_corpus_positions()}.}
 
 \item{\code{sentences}}{A \code{data.table}.}
 
@@ -153,9 +162,9 @@ Simple tokenization of text in chunktable.
 \describe{
 \item{\code{...}}{Arguments that are passed into \code{tokenizers::tokenize_words()}.}
 
-\item{\code{verbose}}{Logical, whether to be verbose.}
+\item{\code{verbose}}{A logical value, whether to be verbose.}
 
-\item{\code{progress}}{Logical, whether to show progress bar.}
+\item{\code{progress}}{A logical value, whether to show progress bar.}
 }
 \if{html}{\out{</div>}}
 }
@@ -177,22 +186,18 @@ Simple tokenization of text in chunktable.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{filenames}}{XXX}
+\item{\code{filenames}}{A vector of files to process.}
 
-\item{\code{body}}{An xpath expression defining the body of the xml document.}
+\item{\code{body}}{An xpath expression defining the body of the XML document.}
 
-\item{\code{meta}}{A named character vector with xpath expressions.}
+\item{\code{meta}}{A named character vector with XPath expressions.}
 
 \item{\code{mc}}{A numeric/integer value, number of cores to use.}
 
-\item{\code{progress}}{Logical, whether to show progress bar.}
+\item{\code{progress}}{A logical value, whether to show progress bar.}
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Details}{
-Import XML files.
-}
-
 \subsection{Returns}{
 The \code{CorpusData} object is returned invisibly.
 }
@@ -201,8 +206,8 @@ The \code{CorpusData} object is returned invisibly.
 \if{html}{\out{<a id="method-CorpusData-add_corpus_positions"></a>}}
 \if{latex}{\out{\hypertarget{method-CorpusData-add_corpus_positions}{}}}
 \subsection{Method \code{add_corpus_positions()}}{
-Add column \code{cpos} to tokenstream and columns \code{cpos_left} and
-\code{cpos_right} to metadata.
+Add column 'cpos' to tokenstream and columns 'cpos_left' and
+'cpos_right' to metadata.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{CorpusData$add_corpus_positions(verbose = TRUE)}\if{html}{\out{</div>}}
 }
@@ -210,7 +215,7 @@ Add column \code{cpos} to tokenstream and columns \code{cpos_left} and
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{verbose}}{Logical, whether to be verbose.}
+\item{\code{verbose}}{A logical value, whether to be verbose.}
 }
 \if{html}{\out{</div>}}
 }
@@ -232,7 +237,8 @@ tokenization/annotation has been performed.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{replacements}}{XXX}
+\item{\code{replacements}}{A list of length-two character vectors with regular
+expressions and replacements.}
 }
 \if{html}{\out{</div>}}
 }
@@ -252,7 +258,9 @@ Encode corpus. If the corpus already exists, it will be removed.
   data_dir = NULL,
   method = c("R", "CWB"),
   verbose = TRUE,
-  compress = FALSE
+  compress = FALSE,
+  reload = TRUE,
+  quietly = TRUE
 )}\if{html}{\out{</div>}}
 }
 
@@ -267,15 +275,22 @@ Encode corpus. If the corpus already exists, it will be removed.
 
 \item{\code{encoding}}{Encoding/charset of the CWB corpus.}
 
-\item{\code{registry_dir}}{Corpus registry, the directory where registry files are stored.}
+\item{\code{registry_dir}}{Corpus registry, the directory where registry files are
+stored.}
 
 \item{\code{data_dir}}{Directory where to create directory for indexed corpus files.}
 
 \item{\code{method}}{Either "R" or "CWB".}
 
-\item{\code{verbose}}{Logical, whether to be verbose.}
+\item{\code{verbose}}{A logical value, whether to be verbose.}
 
-\item{\code{compress}}{Logical, whether to compress corpus.}
+\item{\code{compress}}{A logical value, whether to compress corpus.}
+
+\item{\code{reload}}{A \code{logical} value, whether to reload corpus.}
+
+\item{\code{quietly}}{A \code{logical} value passed into \code{RcppCWB::cwb_makeall()},
+\code{RcppCWB::cwb_huffcode()} and \code{RcppCWB::cwb_compress_rdx} to control
+verbosity of these functions.}
 }
 \if{html}{\out{</div>}}
 }

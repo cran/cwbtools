@@ -599,7 +599,7 @@ corpus_install <- function(pkg = NULL, repo = "https://PolMine.github.io/drat/",
   invisible(TRUE)
 }
 
-#' @details \code{corpus_packages} will detect the packages that include CWB
+#' @details `corpus_packages()` will detect the packages that include CWB
 #'   corpora. Note that the directory structure of all installed packages is
 #'   evaluated which may be slow on network-mounted file systems.
 #' @rdname corpus_utils
@@ -628,7 +628,7 @@ corpus_packages <- function(){
 }
 
 
-#' @details \code{corpus_rename} will rename a corpus, affecting the name of the
+#' @details `corpus_rename()` will rename a corpus, affecting the name of the
 #'   registry file, the corpus id, and the name of the directory where data
 #'   files reside.
 #' @rdname corpus_utils
@@ -673,25 +673,48 @@ corpus_rename <- function(old, new, registry_dir = Sys.getenv("CORPUS_REGISTRY")
 corpus_remove <- function(corpus, registry_dir, ask = interactive(), verbose = TRUE){
 
   if (missing(registry_dir)) registry_dir <- cwb_registry_dir(verbose = FALSE)
+  if (!tolower(corpus) %in% list.files(registry_dir)){
+    cli_alert_warning("abort removing corpus {.val {corpus}}: no registry file")
+    return(FALSE)
+  }
+  if (verbose) cli_rule("remove corpus {col_blue({corpus})}")
+  if (verbose) cli_alert_info("registry directory: {.path {registry_dir}}")
 
-  stopifnot(tolower(corpus) %in% list.files(registry_dir)) # check that corpus exists
-
-  reg <- registry_file_parse(corpus = tolower(corpus), registry_dir = registry_dir)
+  reg <- registry_file_parse(
+    corpus = tolower(corpus),
+    registry_dir = registry_dir
+  )
   data_directory <- reg[["home"]]
+  
+  if (verbose) cli_alert_info("data directory: {.path {data_directory}}")
+  
   if (ask){
     userinput <- menu(
       choices = c("Yes", "No"),
-      title = sprintf("Are you sure you want to delete registry and data files for corpus '%s'?", cli::col_red(corpus))
+      title = sprintf(
+        "Are you sure you want to delete registry and data files for corpus '%s'?",
+        cli::col_red(corpus)
+      )
     )
     if (userinput != 1L){
       cli_alert_warning("User abort")
       return(invisible(FALSE))
     }
   }
-  for (x in list.files(data_directory, full.names = TRUE)) file.remove(x)
-  file.remove(data_directory)
+  
+  if (!is.null(cl_find_corpus(corpus = corpus, registry = registry_dir))){
+    cl_delete_corpus(corpus = corpus, registry = registry_dir)
+  }
+  
+  if (verbose) cli_progress_step("remove files in data directory")
+  file.remove(list.files(data_directory, full.names = TRUE))
+  if (verbose) cli_progress_step("remove data directory")
+  unlink(data_directory, recursive = TRUE)
+  if (verbose) cli_progress_step("remove registry file")
   file.remove(fs::path(registry_dir, tolower(corpus)))
-  if (verbose) cli_alert_success("corpus has been removed (registry and data files)")
+  if (verbose) cli_progress_done()
+  if (verbose)
+    cli_alert_success("corpus {.var {corpus}} has been removed")
   invisible(TRUE)
 }
 
@@ -701,7 +724,13 @@ corpus_remove <- function(corpus, registry_dir, ask = interactive(), verbose = T
 #'   the corpus name in the 'indexed_corpora' subdirectory.
 #' @rdname corpus_utils
 #' @export corpus_as_tarball
-corpus_as_tarball <- function(corpus, registry_dir, data_dir, tarfile, verbose = TRUE){
+corpus_as_tarball <- function(
+    corpus,
+    registry_dir,
+    data_dir = registry_file_parse(corpus, registry_dir)[["home"]],
+    tarfile,
+    verbose = TRUE
+  ){
 
   registry_file <- fs::path(registry_dir, tolower(corpus))
   if (!file.exists(registry_file)){
@@ -711,8 +740,9 @@ corpus_as_tarball <- function(corpus, registry_dir, data_dir, tarfile, verbose =
         corpus, registry_dir)
     )
   }
-
-  home_dir <- if (missing(data_dir)){
+  
+  # unlikely scenario, because this is the default value
+  home_dir <- if (missing(data_dir) || is.null(data_dir)){
     registry_file_parse(corpus = corpus, registry_dir = registry_dir)[["home"]]
   } else {
     data_dir
@@ -758,10 +788,10 @@ corpus_as_tarball <- function(corpus, registry_dir, data_dir, tarfile, verbose =
 #' @param data_dir The data directory where the files of the CWB corpus live.
 #' @param registry_dir_new Target directory with for (new) registry files.
 #' @param data_dir_new Target directory for corpus files.
-#' @param remove A \code{logical} value, whether to remove orginal files after
-#'   having created the copy.
+#' @param remove A `logical` value, whether to remove orginal files after having
+#'   created the copy.
 #' @param progress Logical, whether to show a progress bar.
-#' @details \code{corpus_copy} will create a copy of a corpus (useful for
+#' @details `corpus_copy()` will create a copy of a corpus (useful for
 #'   experimental modifications, for instance).
 #' @importFrom cli make_spinner ansi_with_hidden_cursor cli_alert_success
 #' @export corpus_copy
@@ -779,7 +809,9 @@ corpus_as_tarball <- function(corpus, registry_dir, data_dir, tarfile, verbose =
 #' )
 #' unlink(fs::path(tempdir(), "cwb"), recursive = TRUE)
 corpus_copy <- function(
-  corpus, registry_dir, data_dir = NULL,
+  corpus,
+  registry_dir,
+  data_dir = registry_file_parse(corpus, registry_dir)[["home"]],
   registry_dir_new = fs::path(tempdir(), "cwb", "registry"),
   data_dir_new = fs::path(tempdir(), "cwb", "indexed_corpora", tolower(corpus)),
   remove = FALSE,
@@ -788,17 +820,33 @@ corpus_copy <- function(
   ){
 
   registry_file_old <- fs::path(registry_dir, tolower(corpus))
-  if (!file.exists(registry_file_old)) stop(sprintf("Aborting - registry file %s does not exist.", registry_file_old))
-  if (is.null(data_dir)) data_dir <- registry_file_parse(corpus = corpus, registry_dir = registry_dir)[["home"]]
+  if (!file.exists(registry_file_old)){
+    cli_alert_danger("registry file {.path {registry_file_old}} does not exist.")
+    return(FALSE)
+  }
+    
+  # as data_dir defaults to the value assigned here potentially superfluous
+  if (is.null(data_dir)){
+    data_dir <- registry_file_parse(
+      corpus = corpus,
+      registry_dir = registry_dir
+    )[["home"]]
+  }
 
   registry_file_new <- fs::path(registry_dir_new, tolower(corpus))
 
   if (file.exists(registry_file_new)){
-    stop(sprintf("Aborting - registry file %s already exists in target registry", registry_file_new))
+    cli_alert_danger(
+      "target registry file {.path {registry_file_new}} already exists"
+    )
+    return(FALSE)
   }
 
-  if (!dir.exists(registry_dir_new)) dir.create(registry_dir_new, recursive = TRUE)
-  if (!dir.exists(data_dir_new)) dir.create(data_dir_new, recursive = TRUE)
+  if (!dir.exists(registry_dir_new))
+    dir.create(registry_dir_new, recursive = TRUE)
+  
+  if (!dir.exists(data_dir_new))
+    dir.create(data_dir_new, recursive = TRUE)
 
   spinner <- make_spinner(
     template = "{spin} copy corpus data files to target data directory"
@@ -823,8 +871,8 @@ corpus_copy <- function(
   if (verbose) cli_process_done()
 
   if (length(rf[["info"]]) == 1L){
-    # It is a common mistake that the info file is not stated correctly in the registry file,
-    # so this is a forgiving solution to remedy errors
+    # It is a common mistake that the info file is not stated correctly in the
+    # registry file, so this is a forgiving solution to remedy errors
     info_file_old <- fs::path(data_dir, basename(rf[["info"]]))
     if (!file.exists(info_file_old)){
       info_file_guessed <- grep(
@@ -1042,4 +1090,57 @@ corpus_get_version <- function(corpus, registry_dir = Sys.getenv("CORPUS_REGISTR
     return(NA)
   }
   numeric_version(v_string)
+}
+
+
+#' @details `corpus_reload()` will unload a corpus if necessary and reload it.
+#'   Useful to make new features of a corpus available after modification. 
+#'   Returns logical value `TRUE` if succesful, `FALSE` if not.
+#' @rdname corpus_utils
+#' @export corpus_reload
+#' @importFrom RcppCWB cqp_initialize
+corpus_reload <- function(corpus, registry_dir, verbose = TRUE){
+  cl_delete_corpus(corpus = corpus, registry = registry_dir)
+  if (!is.null(cl_find_corpus(corpus = corpus, registry = registry_dir))){
+    if (verbose) cli_alert_danger("unloading corpus failed")
+    return(FALSE)
+  }
+  
+  # Not too intuitive, but this (re)loads the corpus
+  size <- cl_attribute_size(
+    corpus = corpus,
+    attribute = "word",
+    attribute_type = "p",
+    registry = registry_dir
+  )
+  
+  if (typeof(cl_find_corpus(corpus, registry = registry_dir)) == "externalptr"){
+    cl <- "CL success"
+  } else {
+    cl <- "(CL ERROR)"
+    if (verbose) cli_alert_danger("reloading corpus failed (CL representation")
+    return(FALSE)
+  }
+  
+  if (cqp_is_initialized()){
+    cqp_reset_registry(registry = registry_dir)
+    if (!cqp_load_corpus(corpus = corpus, registry = registry_dir)){
+      cqp <- "CQP ERROR"
+      if (verbose)
+        cli_alert_danger(
+          "reloading corpus failed (CQP representation not available)"
+        )
+      # return(FALSE)
+    } else {
+      cqp <- "CQP success"
+    }
+  } else {
+    cqp_initialize(registry = registry_dir)
+    cqp <- "CQP not initialized"
+  }
+  
+  if (verbose)
+    cli_alert_success("corpus reloaded: {cl} / {cqp}")
+  
+  TRUE
 }

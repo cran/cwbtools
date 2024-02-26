@@ -1,39 +1,53 @@
 #' Manage Corpus Data and Encode CWB Corpus.
 #' 
-#' @param x A single filename, a character vector of filenames, or a directory with XML files.
-#' @param body An xpath expression defining the body of the xml document.
-#' @param verbose Logical, whether to be verbose.
-#' @param progress Logical, whether to show progress bar.
-#' @param meta A named character vector with xpath expressions.
+#' See the [CWB Encoding
+#' Tutorial](https://cwb.sourceforge.io/files/CWB_Encoding_Tutorial.pdf) on
+#' characters allowed for encoding attributes: "By convention, all attribute
+#' names must be lowercase (more precisely, they may only contain the characters
+#' a-z, 0-9, -, and _, and may not start with a digit). Therefore, the names of
+#' XML elements to be included in the CWB corpus must not contain any non-ASCII
+#' or uppercase letters." (section 2)
+#' 
+#' @param x A single filename, a character vector of filenames, or a directory
+#'   with XML files.
+#' @param body An xpath expression defining the body of the XML document.
+#' @param verbose A logical value, whether to be verbose.
+#' @param progress A logical value, whether to show progress bar.
+#' @param meta A named character vector with XPath expressions.
 #' @param mc A numeric/integer value, number of cores to use.
-#' @param compress Logical, whether to compress corpus.
+#' @param compress A logical value, whether to compress corpus.
 #' @param encoding Encoding/charset of the CWB corpus.
-#' @param registry_dir Corpus registry, the directory where registry files are stored.
+#' @param registry_dir Corpus registry, the directory where registry files are
+#'   stored.
 #' @param corpus The name of the CWB corpus.
 #' @param p_attributes Positional attributes.
 #' @param s_attributes Columns that will be encoded as structural attributes.
 #' @param data_dir Directory where to create directory for indexed corpus files.
 #' @param method Either "R" or "CWB".
-#' @param filenames XXX
-#' @param replacements XXX
-#' @param ... Arguments that are passed into \code{tokenizers::tokenize_words()}.
+#' @param filenames A vector of files to process.
+#' @param replacements A list of length-two character vectors with regular
+#'   expressions and replacements.
+#' @param ... Arguments that are passed into `tokenizers::tokenize_words()`.
 #' 
-#' @field chunktable A \code{data.table} with column "id" (unique values),
+#' @field chunktable A `data.table` with column "id" (unique values),
 #'   columns with metadata, and a column with text chunks.
-#' @field tokenstream A \code{data.table} with a column "cpos" (corpus position), and columns
-#'   with positional attributes, such as "word", "lemma", "pos", "stem".
+#' @field tokenstream A `data.table` with a column "cpos" (corpus position), and
+#'   columns with positional attributes, such as "word", "lemma", "pos", "stem".
 #'   
-#' @field metadata A \code{data.table} with a column "id", to link data with chunks/tokenstream,
-#'   columns with document-level metadata, and a column "cpos_left" and "cpos_right", which can
-#'   be generated using method \code{$add_corpus_positions()}.
-#' @field sentences A \code{data.table}.
-#' @field named_entities A \code{data.table}.
+#' @field metadata A `data.table` with a column "id", to link data with
+#'   chunks/tokenstream, columns with document-level metadata, and a column
+#'   "cpos_left" and "cpos_right", which can be generated using method
+#'   `$add_corpus_positions()`.
+#' @field sentences A `data.table`.
+#' @field named_entities A `data.table`.
 #' 
 #' @export CorpusData
-#' @importFrom data.table setnames rbindlist .GRP .SD := fread fwrite setorderv as.data.table data.table
+#' @importFrom data.table setnames rbindlist .GRP .SD := fread fwrite setorderv
+#'   as.data.table data.table
 #' @importFrom data.table uniqueN setkeyv
 #' @importFrom utils txtProgressBar setTxtProgressBar
-#' @importFrom xml2 read_xml xml_attrs xml_find_all xml_find_first xml_name xml_parents xml_text
+#' @importFrom xml2 read_xml xml_attrs xml_find_all xml_find_first xml_name
+#'   xml_parents xml_text
 #' @importFrom pbapply pblapply timerProgressBar setTimerProgressBar
 #' @importFrom stats setNames
 #' @importFrom stringi stri_detect_regex
@@ -95,8 +109,6 @@
 #' 
 #' # create temporary directories (registry directory and one for indexed corpora)
 #' 
-#' tmpdir <- normalizePath(tempdir(), winslash = "/")
-#' if (.Platform$OS.type == "windows") tmpdir <- normalizePath(tmpdir, winslash = "/")
 #' registry_tmp <- fs::path(tempdir(), "registry")
 #' data_dir_tmp <- fs::path(tempdir(), "data_dir")
 #' if (!dir.exists(registry_tmp)) dir.create(registry_tmp)
@@ -134,7 +146,7 @@ CorpusData <- R6::R6Class(
     },
     
     #' @description
-    #' Print summary of \code{CorpusData} object.
+    #' Print summary of `CorpusData` object.
     print = function(){
       if (is.null(self$chunktable)){
         cat("chunktable: NULL\n")
@@ -208,17 +220,24 @@ CorpusData <- R6::R6Class(
           }
         }
         y <- list(
-          text = data.table(id = 1L:length(textnodes), text = sapply(textnodes, xml2::xml_text)),
+          text = data.table(
+            id = 1L:length(textnodes),
+            text = sapply(textnodes, xml2::xml_text)
+          ),
           metadata = dt
         )
         return(y)
       }
       
-      if (!all(file.exists(filenames))) stop("all files provided by x need to exist (not fulfilled)")
+      if (!all(file.exists(filenames)))
+        stop("all files provided by x need to exist (not fulfilled)")
       if (is.null(mc) || mc == 1L){
-        data <- if (progress) pblapply(filenames, .xml_reader) else lapply(filenames, .xml_reader)
+        data <- if (progress)
+          pblapply(filenames, .xml_reader) else lapply(filenames, .xml_reader)
       } else if (is.numeric(mc)){
-        data <- if (progress) pblapply(filenames, .xml_reader, cl = mc) else mclapply(filenames, .xml_reader, mc.cores = mc)
+        data <- if (progress).pblapply(filenames, .xml_reader, cl = mc)
+          else
+            mclapply(filenames, .xml_reader, mc.cores = mc)
       } else {
         stop("If argument 'mc' is not NULL nor 1, it is required to be an integer value.")
       }
@@ -230,14 +249,14 @@ CorpusData <- R6::R6Class(
     },
     
     #' @description 
-    #' Add column \code{cpos} to tokenstream and columns \code{cpos_left} and
-    #' \code{cpos_right} to metadata.
+    #' Add column 'cpos' to tokenstream and columns 'cpos_left' and
+    #' 'cpos_right' to metadata.
     add_corpus_positions = function(verbose = TRUE){
       
       if (!"id" %in% colnames(self$metadata)) stop("id column required")
       self$tokenstream[, "cpos" := 0L:(nrow(self$tokenstream) - 1L)]
       
-      if (verbose) message("... adding corpus positions to table 'metadata'")
+      if (verbose) cli_alert_info("adding corpus positions to table 'metadata'")
       grpn <- uniqueN(self$tokenstream[["id"]])
       if (interactive()) pb <- timerProgressBar(min = 0, max = grpn, width = getOption("pboptions")[["txt.width"]])
       .fn <- function(.SD, .GRP){
@@ -260,7 +279,10 @@ CorpusData <- R6::R6Class(
     #' tokenization/annotation has been performed.
     purge = function(replacements = list(c("^\\s*<.*?>\\s*$", ""), c("\u2019", "'"))){
       for (i in 1L:length(replacements)){
-        if (verbose) message("... checking for presence of regex: ", replacements[[i]][1])
+        if (verbose)
+          cli_alert_info(
+            "checking for presence of regex: {replacements[[i]][1]}"
+          )
         matches <- stri_detect_regex(str = self$chunkdata[["text"]], pattern = replacements[[i]][1])
         if (any(matches)){
           self$chunkdata[["text"]] <- stri_replace_all(
@@ -275,72 +297,161 @@ CorpusData <- R6::R6Class(
     
     #' @description 
     #' Encode corpus. If the corpus already exists, it will be removed.
-    encode = function(corpus, p_attributes = "word", s_attributes = NULL, encoding, registry_dir = Sys.getenv("CORPUS_REGISTRY"), data_dir = NULL, method = c("R", "CWB"), verbose = TRUE, compress = FALSE){
-      
+    #' @param reload A `logical` value, whether to reload corpus.
+    #' @param quietly A `logical` value passed into `RcppCWB::cwb_makeall()`,
+    #'   `RcppCWB::cwb_huffcode()` and `RcppCWB::cwb_compress_rdx` to control 
+    #'   verbosity of these functions.
+    #' @importFrom RcppCWB cl_delete_corpus cl_attribute_size cqp_load_corpus
+    #'   corpus_s_attributes corpus_p_attributes cl_find_corpus
+    #' @importFrom cli cli_progress_step cli_progress_done
+    encode = function(
+      corpus,
+      p_attributes = "word",
+      s_attributes = NULL,
+      encoding,
+      registry_dir = Sys.getenv("CORPUS_REGISTRY"),
+      data_dir = NULL,
+      method = c("R", "CWB"),
+      verbose = TRUE,
+      compress = FALSE,
+      reload = TRUE,
+      quietly = TRUE
+    ){
+      if (verbose) cli_rule("Prepare encoding corpus {corpus}")
+
       if (file.exists(registry_dir))
         if (file.info(registry_dir)[["isdir"]] != TRUE)
           stop("registry_dir is not a directory")
+      if (verbose)
+        cli_alert_info("registry directory: {.path {registry_dir}}")
+      
       registry_file <- fs::path(registry_dir, tolower(corpus))
       
       if (file.exists(registry_file)){
-        message(sprintf("registry file for corpus '%s' already exists - it should be removed", corpus))
+        cli_alert_warning(
+          "registry file for corpus {.val {corpus}} already exists"
+        )
         corpus_remove(corpus = corpus, registry_dir = registry_dir)
       }
-      message(sprintf("Creating new corpus '%s'", corpus))
+      
       if (is.null(data_dir)){
         super_dir <- dirname(registry_dir)
-        potential_data_dir <- grep("index", list.files(super_dir), value = TRUE, perl = TRUE)
-        if (length(potential_data_dir) != 1) stop("no data_dir provided, no candidate found")
+        potential_data_dir <- grep(
+          "index",
+          list.files(super_dir),
+          value = TRUE,
+          perl = TRUE
+        )
+        if (length(potential_data_dir) != 1)
+          stop("no data_dir provided, no candidate found")
         data_dir <- fs::path(super_dir, potential_data_dir, tolower(corpus))
-        message(sprintf("suggesting data_dir: %s\n", data_dir))
-        feedback <- readline(prompt = "Use this data directory? (type 'Y' to confirm, anything else to abort)")
+        if (verbose)
+          cli_alert_info("data directory suggested_ {.path {data_dir}}")
+        
+        feedback <- readline(
+          prompt = "Use this data directory? (type 'Y' to confirm)"
+        )
         if (feedback != "Y") stop("aborting")
         if (!file.exists(data_dir)) dir.create(data_dir)
       } else {
         if (!file.exists(data_dir)) dir.create(data_dir)
       }
+      if (verbose) cli_alert_info("data directory: {.path {data_dir}}")
       
       if (!encoding %in% c("ascii", paste("latin", 1:9, sep = ""), "utf8")){
-        stop("encoding is required to be either ascii, latin1 to latin9, or utf8")
+        stop(
+          "encoding is required to be either ascii, latin1 to latin9, or utf8"
+        )
       }
+      if (verbose) cli_alert_info("encoding: {.val {encoding}}")
       
-      if (verbose) message("... encoding p-attribute 'word'")
+      if (verbose) cli_rule("encode p-attribute {.val word}")
       p_attribute_encode(
-        token_stream = self$tokenstream[["word"]], corpus = corpus, encoding = encoding,
-        registry_dir = registry_dir, data_dir = data_dir, method = method, verbose = verbose,
-        compress = compress
+        token_stream = self$tokenstream[["word"]],
+        corpus = corpus,
+        encoding = encoding,
+        registry_dir = registry_dir,
+        data_dir = data_dir,
+        method = method,
+        verbose = verbose,
+        compress = compress,
+        quietly = quietly
       )
       
       # add other p-attributes than 'word'
-      if (length(p_attributes > 1)){
-        for (new_attribute in p_attributes[which(p_attributes != "word")]){
-          if (verbose) message(sprintf("... encoding p-attribute '%s'", new_attribute))
+      if (length(p_attributes) > 1L){
+        for (p_attr in p_attributes[which(p_attributes != "word")]){
+          if (verbose) cli_rule("encode p-attribute {.val {p_attr}}")
           p_attribute_encode(
-            token_stream = self$tokenstream[[new_attribute]], corpus = corpus, 
-            p_attribute = new_attribute, encoding = encoding,
-            registry_dir = registry_dir, data_dir = data_dir, method = method, verbose = FALSE,
-            compress = compress
+            token_stream = self$tokenstream[[p_attr]],
+            corpus = corpus, 
+            p_attribute = p_attr,
+            encoding = encoding,
+            registry_dir = registry_dir,
+            data_dir = data_dir,
+            method = method,
+            verbose = FALSE,
+            compress = compress,
+            quietly = quietly
           )
         }
       }
       
+      if (verbose) cli_rule("Encode s-attributes")
       for (s_attr in s_attributes){
-        if (verbose) message(sprintf("... encoding s-attribute '%s'", s_attr))
+        if (verbose) cli_alert_info("encode s-attribute {.val {s_attr}}")
         s_attribute_encode(
-          values = self$metadata[[s_attr]], corpus = corpus,
+          values = self$metadata[[s_attr]],
+          corpus = corpus,
           s_attribute = s_attr,
-          region_matrix = as.matrix(self$metadata[,c("cpos_left", "cpos_right")]),
-          data_dir = data_dir, registry_dir = registry_dir, encoding = encoding,
-          method = method, verbose = FALSE
+          region_matrix = as.matrix(
+            self$metadata[,c("cpos_left", "cpos_right")]
+          ),
+          data_dir = data_dir,
+          registry_dir = registry_dir,
+          encoding = encoding,
+          method = method,
+          verbose = FALSE
         )
       }
       
+      if (verbose) cli_rule("Prepare registry file")
+      if (verbose) cli_progress_step("write registry file")
       reg_data <- registry_data(
-        name = toupper(corpus), id = tolower(corpus),
-        home = path.expand(data_dir), properties = c(charset = encoding), 
-        p_attributes = p_attributes, s_attributes = s_attributes
+        name = toupper(corpus),
+        id = tolower(corpus),
+        home = path.expand(data_dir),
+        properties = c(charset = encoding), 
+        p_attributes = p_attributes,
+        s_attributes = s_attributes
       )
-      registry_file_write(data = reg_data, corpus = tolower(corpus), registry_dir = registry_dir)
+      registry_file_write(
+        data = reg_data,
+        corpus = tolower(corpus),
+        registry_dir = registry_dir
+      )
+      if (verbose) cli_progress_done()
+      
+      if (verbose) cli_rule("Check result")
+      
+      if (isTRUE(reload))
+        corpus_reload(corpus = corpus, registry = registry_dir)
+      
+      
+      p_attrs <- corpus_p_attributes(corpus = corpus, registry = registry_dir)
+      if (all(p_attributes %in% p_attrs)){
+        if (verbose) cli_alert_success("all p-attributes are available")
+      } else {
+        cli_alert_danger("not all p-attributes available")
+      }
+      
+      s_attrs <- corpus_s_attributes(corpus = corpus, registry = registry_dir)
+      if (all(s_attributes %in% s_attrs)){
+        if (verbose) cli_alert_success("all s-attributes are available")
+      } else {
+        cli_alert_danger("not all s-attributes available")
+      }
+      
       invisible(self)
     }
     
