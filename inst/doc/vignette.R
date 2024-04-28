@@ -13,6 +13,9 @@ if (!file.exists(data_dir_tmp)) dir.create(data_dir_tmp)
 library(cwbtools)
 library(data.table)
 
+## ----run_tidytext, include = FALSE, echo = FALSE------------------------------
+run_tidytext_example <- requireNamespace("tidytext") && requireNamespace("janeaustenr")
+
 ## ----message = FALSE, results = FALSE-----------------------------------------
 austen_data_dir_tmp <- fs::path(data_dir_tmp, "austen")
 
@@ -22,7 +25,7 @@ file.remove(list.files(austen_data_dir_tmp, full.names = TRUE))
 ## -----------------------------------------------------------------------------
 Austen <- CorpusData$new()
 
-## -----------------------------------------------------------------------------
+## ----eval = run_tidytext_example----------------------------------------------
 tbl <- tidytext::unnest_tokens(
   janeaustenr::austen_books(),
   word, text, to_lower = FALSE
@@ -30,13 +33,13 @@ tbl <- tidytext::unnest_tokens(
 
 Austen$tokenstream <- as.data.table(tbl)
 
-## -----------------------------------------------------------------------------
+## ----eval = run_tidytext_example----------------------------------------------
 Austen$tokenstream[, stem := SnowballC::wordStem(Austen$tokenstream[["word"]], language = "english")]
 
-## -----------------------------------------------------------------------------
+## ----eval = run_tidytext_example----------------------------------------------
 Austen$tokenstream[, cpos := 0L:(nrow(tbl) - 1L)]
 
-## -----------------------------------------------------------------------------
+## ----eval = run_tidytext_example----------------------------------------------
 cpos_max_min <- function(x)
   list(cpos_left = min(x[["cpos"]]), cpos_right = max(x[["cpos"]]))
 Austen$metadata <- Austen$tokenstream[, cpos_max_min(.SD), by = book]
@@ -45,12 +48,12 @@ setcolorder(Austen$metadata, c("cpos_left", "cpos_right", "book"))
 
 head(Austen$tokenstream)
 
-## -----------------------------------------------------------------------------
+## ----eval = run_tidytext_example----------------------------------------------
 Austen$tokenstream[, book := NULL]
 setcolorder(Austen$tokenstream, c("cpos", "word", "stem"))
 Austen$tokenstream
 
-## ----message = FALSE----------------------------------------------------------
+## ----message = FALSE, eval = run_tidytext_example-----------------------------
 Austen$encode(
    corpus = "AUSTEN",
    encoding = "utf8",
@@ -63,7 +66,7 @@ Austen$encode(
    reload = TRUE
 )
 
-## -----------------------------------------------------------------------------
+## ----eval = run_tidytext_example----------------------------------------------
 ids <- RcppCWB::cl_str2id(
   corpus = "AUSTEN",
   p_attribute = "word",
@@ -171,36 +174,36 @@ reuters.tm <- VCorpus(
   list(reader = readReut21578XMLasPlain)
 )
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("tidytext", quietly = TRUE)----------------------
 library(tidytext)
 reuters.tbl <- tidy(reuters.tm)
 reuters.tbl
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("tidytext", quietly = TRUE)----------------------
 topics <- sapply(reuters.tbl[["topics_cat"]], paste, collapse = "|")
 places <- sapply(reuters.tbl[["places"]], paste, collapse = "|")
 
 reuters.tbl[["topics"]] <- topics
 reuters.tbl[["places"]] <- places
 
-## ----results = FALSE----------------------------------------------------------
+## ----results = FALSE, eval = requireNamespace("tidytext", quietly = TRUE)-----
 Reuters <- CorpusData$new()
 reuters_data_dir_tmp <- fs::path(data_dir_tmp, "reuters")
 if (!file.exists(reuters_data_dir_tmp)) dir.create(reuters_data_dir_tmp)
 file.remove(list.files(reuters_data_dir_tmp, full.names = TRUE))
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("tidytext", quietly = TRUE)----------------------
 Reuters$chunktable <- data.table(reuters.tbl[, c("id", "text")])
 Reuters$metadata <- data.table(reuters.tbl[,c("id", "topics", "places")])
 Reuters
 
-## ----message = FALSE, results = FALSE-----------------------------------------
+## ----message = FALSE, results = FALSE, eval = requireNamespace("tidytext", quietly = TRUE)----
 Reuters$tokenize()
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("tidytext", quietly = TRUE)----------------------
 Reuters$tokenstream
 
-## ----message = FALSE----------------------------------------------------------
+## ----message = FALSE, eval = requireNamespace("tidytext", quietly = TRUE)-----
 Reuters$encode(
    corpus = "REUTERS",
    encoding = "utf8",
@@ -212,7 +215,7 @@ Reuters$encode(
    compress = FALSE
 )
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("tidytext", quietly = TRUE)----------------------
 ids <- RcppCWB::cl_str2id(
   corpus = "REUTERS",
   p_attribute = "word",
@@ -229,7 +232,7 @@ cpos <- RcppCWB::cl_id2cpos(
 
 length(cpos)
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("tidytext", quietly = TRUE)----------------------
 reuters_size <- RcppCWB::attribute_size(
   corpus = "REUTERS",
   registry = registry_tmp,
@@ -251,10 +254,10 @@ token_stream <- RcppCWB::cl_id2str(
   id = ids
 )
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("SnowballC") && requireNamespace("tidytext")-----
 stemmed <- SnowballC::wordStem(token_stream, language = "en")
 
-## -----------------------------------------------------------------------------
+## ----eval = requireNamespace("SnowballC") && requireNamespace("tidytext")-----
 p_attribute_encode(
   token_stream = stemmed,
   p_attribute = "stem",
